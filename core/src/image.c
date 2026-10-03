@@ -1,9 +1,9 @@
-#include "../include/image.h"
+#include "image.h"
 
 #include <stdlib.h>
 
-#include "../../third_party/stb/stb_image.h"
-#include "../../third_party/stb/stb_image_write.h"
+#include "stb_image.h"
+#include "stb_image_write.h"
 
 PcbImage* image_load(const char* filename) {
   PcbImage* img = (PcbImage*)malloc(sizeof(PcbImage));
