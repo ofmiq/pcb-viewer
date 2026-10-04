@@ -7,7 +7,7 @@ typedef struct {
   int width;
   int height;
   int channels;
-  int stride;
+  int stride;  // assumed: stride = width * channels
   uint8_t* data;
 } PcbImage;
 
@@ -17,5 +17,6 @@ void image_free(PcbImage* img);
 int image_save_png(const PcbImage* img, const char* filename);
 
 PcbImage* preprocess_grayscale(const PcbImage* src);
+PcbImage* preprocess_gaussian_blur(const PcbImage* src);
 
 #endif  // PCB_IMAGE_H

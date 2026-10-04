@@ -1,4 +1,4 @@
 build/
-resources/*_out.*
+resources/
 compile_commands.json
 

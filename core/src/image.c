@@ -47,24 +47,29 @@ PcbImage* preprocess_grayscale(const PcbImage* src) {
     return NULL;
   }
 
+  int width = src->width;
+  int height = src->height;
+  int channels = src->channels;
+  int total_pixels = width * height;
+
   PcbImage* img = (PcbImage*)malloc(sizeof(PcbImage));
   if (!img) {
     return NULL;
   }
 
-  img->width = src->width;
-  img->height = src->height;
+  img->width = width;
+  img->height = height;
   img->channels = 1;
-  img->stride = img->width;
+  img->stride = width;
 
-  img->data = (uint8_t*)malloc(img->width * img->height);
+  img->data = (uint8_t*)malloc(total_pixels);
   if (!img->data) {
     free(img);
     return NULL;
   }
 
-  for (int i = 0; i < img->width * img->height; ++i) {
-    const uint8_t* p = src->data + i * src->channels;
+  for (int i = 0; i < total_pixels; ++i) {
+    const uint8_t* p = src->data + i * channels;
 
     uint8_t r = p[0];
     uint8_t g = p[1];
@@ -84,4 +89,79 @@ PcbImage* preprocess_grayscale(const PcbImage* src) {
   }
 
   return img;
+}
+
+PcbImage* preprocess_gaussian_blur(const PcbImage* src) {
+  if (!src || !src->data || src->channels != 1) {
+    return NULL;
+  }
+
+  int width = src->width;
+  int height = src->height;
+  int total_pixels = width * height;
+
+  PcbImage* dst = (PcbImage*)malloc(sizeof(PcbImage));
+  if (!dst) {
+    return NULL;
+  }
+
+  dst->data = (uint8_t*)malloc(total_pixels);
+  if (!dst->data) {
+    free(dst);
+    return NULL;
+  }
+
+  dst->width = width;
+  dst->height = height;
+  dst->channels = 1;
+  dst->stride = width;
+
+  int* tmp = (int*)malloc(total_pixels * sizeof(int));
+  if (!tmp) {
+    free(dst->data);
+    free(dst);
+    return NULL;
+  }
+
+  for (int y = 0; y < height; ++y) {
+    const uint8_t* src_row = src->data + y * width;
+    int* tmp_row = tmp + y * width;
+
+    tmp_row[0] = src_row[0] + 2 * src_row[0] + src_row[1];
+
+    for (int x = 1; x < width - 1; ++x) {
+      tmp_row[x] = src_row[x - 1] + 2 * src_row[x] + src_row[x + 1];
+    }
+
+    tmp_row[width - 1] = src_row[width - 2] + 2 * src_row[width - 1] + src_row[width - 1];
+  }
+
+  uint8_t* dst_row = dst->data;
+  const int* tmp_row0 = tmp;
+  const int* tmp_row1 = tmp + width;
+  for (int x = 0; x < width; ++x) {
+    dst_row[x] = (tmp_row0[x] + 2 * tmp_row0[x] + tmp_row1[x] + 8) / 16;
+  }
+
+  for (int y = 1; y < height - 1; ++y) {
+    const int* above_row = tmp + (y - 1) * width;
+    const int* center_row = tmp + y * width;
+    const int* below_row = tmp + (y + 1) * width;
+    dst_row = dst->data + y * width;
+
+    for (int x = 0; x < width; ++x) {
+      int val = above_row[x] + 2 * center_row[x] + below_row[x] + 8;
+      dst_row[x] = val / 16;
+    }
+  }
+
+  dst_row = dst->data + (height - 1) * width;
+  const int* tmp_prev_bot_row = tmp + (height - 2) * width;
+  const int* tmp_bot_row = tmp + (height - 1) * width;
+  for (int x = 0; x < width; ++x) {
+    dst_row[x] = (tmp_prev_bot_row[x] + 2 * tmp_bot_row[x] + tmp_bot_row[x] + 8) / 16;
+  }
+
+  free(tmp);
+  return dst;
 }
