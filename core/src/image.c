@@ -91,6 +91,128 @@ PcbImage* preprocess_grayscale(const PcbImage* src) {
   return img;
 }
 
+PcbImage* preprocess_downscale(const PcbImage* src, const int target_width) {
+  if (!src || !src->data || src->channels != 1) {
+    return NULL;
+  }
+
+  int src_width = src->width;
+  int src_height = src->height;
+
+  double scale = (double)target_width / src_width;
+
+  int out_width = target_width;
+  int out_height = src_height * scale + 0.5;
+  if (out_height < 1) {
+    out_height = 1;
+  }
+
+  int* x_start = (int*)malloc(out_width * sizeof(int));
+  int* x_end = (int*)malloc(out_width * sizeof(int));
+  int* y_start = (int*)malloc(out_height * sizeof(int));
+  int* y_end = (int*)malloc(out_height * sizeof(int));
+
+  if (!x_start || !x_end || !y_start || !y_end) {
+    free(x_start);
+    free(x_end);
+    free(y_start);
+    free(y_end);
+    return NULL;
+  }
+
+  for (int ox = 0; ox < out_width; ++ox) {
+    int start = ox / scale;
+    int end = (ox + 1) / scale;
+
+    if (end <= start) {
+      end = start + 1;
+    }
+    if (end > src_width) {
+      end = src_width;
+    }
+    if (start >= end) {
+      start = end - 1;
+    }
+
+    x_start[ox] = start;
+    x_end[ox] = end;
+  }
+
+  for (int oy = 0; oy < out_height; ++oy) {
+    int start = oy / scale;
+    int end = (oy + 1) / scale;
+
+    if (end <= start) {
+      end = start + 1;
+    }
+    if (end > src_height) {
+      end = src_height;
+    }
+    if (start >= end) {
+      start = end - 1;
+    }
+
+    y_start[oy] = start;
+    y_end[oy] = end;
+  }
+
+  PcbImage* dst = (PcbImage*)malloc(sizeof(PcbImage));
+  if (!dst) {
+    free(x_start);
+    free(x_end);
+    free(y_start);
+    free(y_end);
+    return NULL;
+  }
+
+  dst->data = (uint8_t*)malloc(out_width * out_height);
+  if (!dst->data) {
+    free(dst);
+    free(x_start);
+    free(x_end);
+    free(y_start);
+    free(y_end);
+    return NULL;
+  }
+
+  dst->width = out_width;
+  dst->height = out_height;
+  dst->channels = 1;
+  dst->stride = out_width;
+
+  for (int oy = 0; oy < out_height; ++oy) {
+    int sy_start = y_start[oy];
+    int sy_end = y_end[oy];
+    uint8_t* dst_row = dst->data + oy * out_width;
+
+    for (int ox = 0; ox < out_width; ++ox) {
+      int sx_start = x_start[ox];
+      int sx_end = x_end[ox];
+
+      int sum = 0;
+      int count = 0;
+
+      for (int sy = sy_start; sy < sy_end; ++sy) {
+        const uint8_t* src_row = src->data + sy * src_width;
+
+        for (int sx = sx_start; sx < sx_end; ++sx) {
+          sum += src_row[sx];
+          count++;
+        }
+      }
+
+      dst_row[ox] = sum / count;
+    }
+  }
+
+  free(x_start);
+  free(x_end);
+  free(y_start);
+  free(y_end);
+
+  return dst;
+}
+
 PcbImage* preprocess_gaussian_blur(const PcbImage* src) {
   if (!src || !src->data || src->channels != 1) {
     return NULL;

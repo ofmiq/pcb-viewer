@@ -40,7 +40,19 @@ int main(void) {
   }
 
   clock_gettime(CLOCK_MONOTONIC, &stage_start);
-  PcbImage* blurred_img = preprocess_gaussian_blur(grayscaled_img);
+  PcbImage* scaled_img = preprocess_downscale(grayscaled_img, 1200);
+  clock_gettime(CLOCK_MONOTONIC, &stage_end);
+  double scaled_t = get_elapsed_ms(stage_start, stage_end);
+
+  if (!scaled_img) {
+    printf("[CORE] Downscaling failed\n");
+    image_free(img);
+    image_free(grayscaled_img);
+    return 1;
+  }
+
+  clock_gettime(CLOCK_MONOTONIC, &stage_start);
+  PcbImage* blurred_img = preprocess_gaussian_blur(scaled_img);
   clock_gettime(CLOCK_MONOTONIC, &stage_end);
   double blur_t = get_elapsed_ms(stage_start, stage_end);
 
@@ -48,6 +60,7 @@ int main(void) {
     printf("[CORE] Blurring failed\n");
     image_free(img);
     image_free(grayscaled_img);
+    image_free(scaled_img);
     return 1;
   }
 
@@ -61,6 +74,7 @@ int main(void) {
 
   printf("[Load]:  %.3f ms\n", load_t);
   printf("[Gray]:  %.3f ms\n", gray_t);
+  printf("[Scale]: %.3f ms\n", scaled_t);
   printf("[Blur]:  %.3f ms\n", blur_t);
   printf("[Save]:  %.3f ms\n", save_t);
   printf("[TOTAL PIPELINE]: %.3f ms\n", total_t);
@@ -71,6 +85,7 @@ int main(void) {
 
   image_free(img);
   image_free(grayscaled_img);
+  image_free(scaled_img);
   image_free(blurred_img);
 
   return 0;

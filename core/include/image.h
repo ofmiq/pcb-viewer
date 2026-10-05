@@ -17,6 +17,7 @@ void image_free(PcbImage* img);
 int image_save_png(const PcbImage* img, const char* filename);
 
 PcbImage* preprocess_grayscale(const PcbImage* src);
+PcbImage* preprocess_downscale(const PcbImage* src, const int targe_width);
 PcbImage* preprocess_gaussian_blur(const PcbImage* src);
 
 #endif  // PCB_IMAGE_H
