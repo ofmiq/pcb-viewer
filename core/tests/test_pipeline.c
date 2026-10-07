@@ -29,38 +29,38 @@ int main(void) {
   }
 
   clock_gettime(CLOCK_MONOTONIC, &stage_start);
-  PcbImage* grayscaled_img = preprocess_grayscale(img);
-  clock_gettime(CLOCK_MONOTONIC, &stage_end);
-  double gray_t = get_elapsed_ms(stage_start, stage_end);
-
-  if (!grayscaled_img) {
-    printf("[CORE] Grayscaling failed\n");
-    image_free(img);
-    return 1;
-  }
-
-  clock_gettime(CLOCK_MONOTONIC, &stage_start);
-  PcbImage* scaled_img = preprocess_downscale(grayscaled_img, 1200);
+  PcbImage* scaled_img = preprocess_downscale(img, 1200);
   clock_gettime(CLOCK_MONOTONIC, &stage_end);
   double scaled_t = get_elapsed_ms(stage_start, stage_end);
 
   if (!scaled_img) {
     printf("[CORE] Downscaling failed\n");
     image_free(img);
-    image_free(grayscaled_img);
     return 1;
   }
 
   clock_gettime(CLOCK_MONOTONIC, &stage_start);
-  PcbImage* blurred_img = preprocess_gaussian_blur(scaled_img);
+  PcbImage* grayscaled_img = preprocess_grayscale(scaled_img);
+  clock_gettime(CLOCK_MONOTONIC, &stage_end);
+  double gray_t = get_elapsed_ms(stage_start, stage_end);
+
+  if (!grayscaled_img) {
+    printf("[CORE] Grayscaling failed\n");
+    image_free(img);
+    image_free(scaled_img);
+    return 1;
+  }
+
+  clock_gettime(CLOCK_MONOTONIC, &stage_start);
+  PcbImage* blurred_img = preprocess_gaussian_blur(grayscaled_img);
   clock_gettime(CLOCK_MONOTONIC, &stage_end);
   double blur_t = get_elapsed_ms(stage_start, stage_end);
 
   if (!blurred_img) {
     printf("[CORE] Blurring failed\n");
     image_free(img);
-    image_free(grayscaled_img);
     image_free(scaled_img);
+    image_free(grayscaled_img);
     return 1;
   }
 
@@ -73,8 +73,8 @@ int main(void) {
   double total_t = get_elapsed_ms(pipeline_start, pipeline_end);
 
   printf("[Load]:  %.3f ms\n", load_t);
-  printf("[Gray]:  %.3f ms\n", gray_t);
   printf("[Scale]: %.3f ms\n", scaled_t);
+  printf("[Gray]:  %.3f ms\n", gray_t);
   printf("[Blur]:  %.3f ms\n", blur_t);
   printf("[Save]:  %.3f ms\n", save_t);
   printf("[TOTAL PIPELINE]: %.3f ms\n", total_t);

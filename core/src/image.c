@@ -92,12 +92,13 @@ PcbImage* preprocess_grayscale(const PcbImage* src) {
 }
 
 PcbImage* preprocess_downscale(const PcbImage* src, const int target_width) {
-  if (!src || !src->data || src->channels != 1) {
+  if (!src || !src->data || src->channels < 1 || target_width <= 0 || target_width >= src->width) {
     return NULL;
   }
 
   int src_width = src->width;
   int src_height = src->height;
+  int channels = src->channels;
 
   double scale = (double)target_width / src_width;
 
@@ -165,7 +166,12 @@ PcbImage* preprocess_downscale(const PcbImage* src, const int target_width) {
     return NULL;
   }
 
-  dst->data = (uint8_t*)malloc(out_width * out_height);
+  dst->width = out_width;
+  dst->height = out_height;
+  dst->channels = channels;
+  dst->stride = out_width * channels;
+
+  dst->data = (uint8_t*)malloc(dst->stride * out_height);
   if (!dst->data) {
     free(dst);
     free(x_start);
@@ -175,33 +181,39 @@ PcbImage* preprocess_downscale(const PcbImage* src, const int target_width) {
     return NULL;
   }
 
-  dst->width = out_width;
-  dst->height = out_height;
-  dst->channels = 1;
-  dst->stride = out_width;
+  uint32_t sum[4];
 
   for (int oy = 0; oy < out_height; ++oy) {
     int sy_start = y_start[oy];
     int sy_end = y_end[oy];
-    uint8_t* dst_row = dst->data + oy * out_width;
+    uint8_t* dst_row = dst->data + oy * dst->stride;
 
     for (int ox = 0; ox < out_width; ++ox) {
       int sx_start = x_start[ox];
       int sx_end = x_end[ox];
 
-      int sum = 0;
+      for (int c = 0; c < channels; ++c) {
+        sum[c] = 0;
+      }
       int count = 0;
 
       for (int sy = sy_start; sy < sy_end; ++sy) {
-        const uint8_t* src_row = src->data + sy * src_width;
+        const uint8_t* src_row = src->data + sy * src->stride;
 
         for (int sx = sx_start; sx < sx_end; ++sx) {
-          sum += src_row[sx];
+          const uint8_t* px = src_row + sx * channels;
+
+          for (int c = 0; c < channels; ++c) {
+            sum[c] += px[c];
+          }
           count++;
         }
       }
 
-      dst_row[ox] = sum / count;
+      uint8_t* dst_px = dst_row + ox * channels;
+      for (int c = 0; c < channels; ++c) {
+        dst_px[c] = sum[c] / count;
+      }
     }
   }
 

@@ -40,30 +40,13 @@ int main(void) {
     }
 
     clock_gettime(CLOCK_MONOTONIC, &start_t);
-    PcbImage* grayscaled_img = preprocess_grayscale(img);
-    clock_gettime(CLOCK_MONOTONIC, &end_t);
-    double gray_t = get_elapsed_ms(start_t, end_t);
-
-    if (!grayscaled_img) {
-      printf("[CORE] Grayscaling failed for %s\n\n", filename);
-      image_free(img);
-      continue;
-    }
-
-    clock_gettime(CLOCK_MONOTONIC, &start_t);
-    image_save_png(grayscaled_img, gray_path);
-    clock_gettime(CLOCK_MONOTONIC, &end_t);
-    double save_gray_t = get_elapsed_ms(start_t, end_t);
-
-    clock_gettime(CLOCK_MONOTONIC, &start_t);
-    PcbImage* downscaled_img = preprocess_downscale(grayscaled_img, 1200);
+    PcbImage* downscaled_img = preprocess_downscale(img, 1200);
     clock_gettime(CLOCK_MONOTONIC, &end_t);
     double scale_t = get_elapsed_ms(start_t, end_t);
 
     if (!downscaled_img) {
       printf("[CORE] Blurring failed for %s\n\n", filename);
       image_free(img);
-      image_free(grayscaled_img);
       continue;
     }
 
@@ -73,15 +56,32 @@ int main(void) {
     double save_scale_t = get_elapsed_ms(start_t, end_t);
 
     clock_gettime(CLOCK_MONOTONIC, &start_t);
-    PcbImage* blurred_img = preprocess_gaussian_blur(downscaled_img);
+    PcbImage* grayscaled_img = preprocess_grayscale(downscaled_img);
+    clock_gettime(CLOCK_MONOTONIC, &end_t);
+    double gray_t = get_elapsed_ms(start_t, end_t);
+
+    if (!grayscaled_img) {
+      printf("[CORE] Grayscaling failed for %s\n\n", filename);
+      image_free(img);
+      image_free(downscaled_img);
+      continue;
+    }
+
+    clock_gettime(CLOCK_MONOTONIC, &start_t);
+    image_save_png(grayscaled_img, gray_path);
+    clock_gettime(CLOCK_MONOTONIC, &end_t);
+    double save_gray_t = get_elapsed_ms(start_t, end_t);
+
+    clock_gettime(CLOCK_MONOTONIC, &start_t);
+    PcbImage* blurred_img = preprocess_gaussian_blur(grayscaled_img);
     clock_gettime(CLOCK_MONOTONIC, &end_t);
     double blur_t = get_elapsed_ms(start_t, end_t);
 
     if (!blurred_img) {
       printf("[CORE] Blurring failed for %s\n\n", filename);
       image_free(img);
-      image_free(grayscaled_img);
       image_free(downscaled_img);
+      image_free(grayscaled_img);
       continue;
     }
 
@@ -91,12 +91,13 @@ int main(void) {
     double save_blur_t = get_elapsed_ms(start_t, end_t);
 
     printf("[Load]: %.3f ms\n", load_t);
-    printf("[Gray]: %.3f ms (Save: %.3f ms)\n", gray_t, save_gray_t);
     printf("[Scale]: %.3f ms (Save: %.3f ms)\n", scale_t, save_scale_t);
+    printf("[Gray]: %.3f ms (Save: %.3f ms)\n", gray_t, save_gray_t);
     printf("[Blur]: %.3f ms (Save: %.3f ms)\n", blur_t, save_blur_t);
-    printf("[Total Preproc]: %.3f ms\n\n", gray_t + blur_t);
+    printf("[Total Preproc]: %.3f ms\n\n", scale_t + gray_t + blur_t);
 
     image_free(img);
+    image_free(downscaled_img);
     image_free(grayscaled_img);
     image_free(blurred_img);
   }
