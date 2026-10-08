@@ -181,7 +181,7 @@ PcbImage* preprocess_downscale(const PcbImage* src, const int target_width) {
     return NULL;
   }
 
-  uint32_t sum[4];
+  uint32_t sum[3];
 
   for (int oy = 0; oy < out_height; ++oy) {
     int sy_start = y_start[oy];
