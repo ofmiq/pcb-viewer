@@ -1,6 +1,7 @@
 add_library(pcbcore STATIC
     src/image.c
     src/stb_impl.c
+    src/preprocessing.c
 )
 
 target_include_directories(pcbcore PUBLIC
