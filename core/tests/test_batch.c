@@ -1,12 +1,8 @@
 #include <stdio.h>
-#include <time.h>
 
+#include "debug.h"
 #include "image.h"
 #include "preprocessing.h"
-
-double get_elapsed_ms(struct timespec start, struct timespec end) {
-  return (end.tv_sec - start.tv_sec) * 1000.0 + (end.tv_nsec - start.tv_nsec) / 1e6;
-}
 
 int main(void) {
   const char* filenames[] = {"high_iso_noisy.png", "reflection.png", "standart.png"};
@@ -28,38 +24,31 @@ int main(void) {
     snprintf(scale_path, sizeof(scale_path), "resources/downscaled/%s", filename);
     snprintf(blur_path, sizeof(blur_path), "resources/blurred/%s", filename);
 
-    struct timespec start_t, end_t;
-
-    clock_gettime(CLOCK_MONOTONIC, &start_t);
-    PcbImage* img = image_load(input_path);
-    clock_gettime(CLOCK_MONOTONIC, &end_t);
-    double load_t = get_elapsed_ms(start_t, end_t);
+    // 1. Loading
+    PcbImage* img = NULL;
+    double load_t = TIME_EXEC(img = image_load(input_path));
 
     if (!img) {
       printf("[CORE] Failed to load %s\n\n", input_path);
       continue;
     }
 
-    clock_gettime(CLOCK_MONOTONIC, &start_t);
-    PcbImage* downscaled_img = preprocess_downscale(img, 1200);
-    clock_gettime(CLOCK_MONOTONIC, &end_t);
-    double scale_t = get_elapsed_ms(start_t, end_t);
+    // 2. Downscaling
+    PcbImage* downscaled_img = NULL;
+    double scale_t = TIME_EXEC(downscaled_img = preprocess_downscale(img, 1200));
 
     if (!downscaled_img) {
-      printf("[CORE] Blurring failed for %s\n\n", filename);
+      printf("[CORE] Downscaling failed for %s\n\n", filename);
       image_free(img);
       continue;
     }
 
-    clock_gettime(CLOCK_MONOTONIC, &start_t);
-    image_save_png(downscaled_img, scale_path);
-    clock_gettime(CLOCK_MONOTONIC, &end_t);
-    double save_scale_t = get_elapsed_ms(start_t, end_t);
+    // 3. Saving downscaled image
+    double save_scale_t = TIME_EXEC(image_save_png(downscaled_img, scale_path));
 
-    clock_gettime(CLOCK_MONOTONIC, &start_t);
-    PcbImage* grayscaled_img = preprocess_grayscale(downscaled_img);
-    clock_gettime(CLOCK_MONOTONIC, &end_t);
-    double gray_t = get_elapsed_ms(start_t, end_t);
+    // 4. Grayscaling
+    PcbImage* grayscaled_img = NULL;
+    double gray_t = TIME_EXEC(grayscaled_img = preprocess_grayscale(downscaled_img));
 
     if (!grayscaled_img) {
       printf("[CORE] Grayscaling failed for %s\n\n", filename);
@@ -68,15 +57,12 @@ int main(void) {
       continue;
     }
 
-    clock_gettime(CLOCK_MONOTONIC, &start_t);
-    image_save_png(grayscaled_img, gray_path);
-    clock_gettime(CLOCK_MONOTONIC, &end_t);
-    double save_gray_t = get_elapsed_ms(start_t, end_t);
+    // 5. Saving grayscaled image
+    double save_gray_t = TIME_EXEC(image_save_png(grayscaled_img, gray_path));
 
-    clock_gettime(CLOCK_MONOTONIC, &start_t);
-    PcbImage* blurred_img = preprocess_gaussian_blur(grayscaled_img);
-    clock_gettime(CLOCK_MONOTONIC, &end_t);
-    double blur_t = get_elapsed_ms(start_t, end_t);
+    // 6. Gaussian blurring
+    PcbImage* blurred_img = NULL;
+    double blur_t = TIME_EXEC(blurred_img = preprocess_gaussian_blur(grayscaled_img));
 
     if (!blurred_img) {
       printf("[CORE] Blurring failed for %s\n\n", filename);
@@ -86,11 +72,10 @@ int main(void) {
       continue;
     }
 
-    clock_gettime(CLOCK_MONOTONIC, &start_t);
-    image_save_png(blurred_img, blur_path);
-    clock_gettime(CLOCK_MONOTONIC, &end_t);
-    double save_blur_t = get_elapsed_ms(start_t, end_t);
+    // 7. Saving blurred image
+    double save_blur_t = TIME_EXEC(image_save_png(blurred_img, blur_path));
 
+    // Stats
     printf("[Load]: %.3f ms\n", load_t);
     printf("[Scale]: %.3f ms (Save: %.3f ms)\n", scale_t, save_scale_t);
     printf("[Gray]: %.3f ms (Save: %.3f ms)\n", gray_t, save_gray_t);

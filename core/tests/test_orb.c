@@ -1,5 +1,6 @@
 #include <stdio.h>
 
+#include "debug.h"
 #include "image.h"
 #include "orb.h"
 #include "preprocessing.h"
@@ -43,15 +44,26 @@ int main(void) {
   }
 
   int size = 0;
-  Keypoint* keypoints = fast_detect(blurred_img, 20, &size);
+  Keypoint* keypoints;
+  double keypoints_time = TIME_EXEC(keypoints = fast_detect(blurred_img, 40, &size));
 
-  printf("Keypoints found: %d", size);
+  printf("[CORE] Num of keypoints: %d\n", size);
+
+  int suppresed_size = 0;
+  Keypoint* suppresed_keypoints;
+  double suppressed_keypoints_time =
+      TIME_EXEC(suppresed_keypoints = nms_suppress(keypoints, size, 3, &suppresed_size));
+
+  printf("[CORE] Num of suppresed keypoints: %d\n", suppresed_size);
 
   PcbImage* rgb_image = grayscale_to_rgb(blurred_img);
 
-  draw_keypoints(rgb_image, keypoints, size);
+  double drawing_time = TIME_EXEC(draw_keypoints(rgb_image, suppresed_keypoints, size));
 
   image_save_png(rgb_image, output_path);
 
+  printf("[Keypoints]: %.3f ms\n", keypoints_time);
+  printf("[Suppresed keypoints]: %.3f ms\n", suppressed_keypoints_time);
+  printf("[Drawing]: %.3f ms\n", drawing_time);
   return 0;
 }

@@ -27,17 +27,14 @@ set_target_properties(test_orb PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINAR
 target_compile_options(test_batch PRIVATE
     -Wall
     -Wextra
-    -Wpedantic
 )
 
 target_compile_options(test_pipeline PRIVATE
     -Wall
     -Wextra
-    -Wpedantic
 )
 
 target_compile_options(test_orb PRIVATE
     -Wall
     -Wextra
-    -Wpedantic
 )
