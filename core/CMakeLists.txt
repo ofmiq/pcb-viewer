@@ -1,7 +1,7 @@
 add_library(pcbcore STATIC
     src/image.c
     src/stb_impl.c
-    src/preprocessing.c
+    src/image_utils.c
     src/orb.c
 )
 

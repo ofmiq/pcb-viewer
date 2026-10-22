@@ -1,5 +1,5 @@
-#ifndef PREPROCESSING_H
-#define PREPROCESSING_H
+#ifndef IMAGE_UTILS_H
+#define IMAGE_UTILS_H
 
 #include "image.h"
 #include "orb.h"
@@ -10,4 +10,4 @@ PcbImage* preprocess_gaussian_blur(const PcbImage* src);
 PcbImage* grayscale_to_rgb(const PcbImage* src);
 void draw_keypoints(PcbImage* src, const Keypoint* keypoints, int count);
 
-#endif  // PREPROCESSING_H
+#endif  // IMAGE_UTILS_H

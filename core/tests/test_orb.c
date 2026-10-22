@@ -3,8 +3,8 @@
 
 #include "debug.h"
 #include "image.h"
+#include "image_utils.h"
 #include "orb.h"
-#include "preprocessing.h"
 
 #define THRESHOLD 30
 #define RADIUS 3

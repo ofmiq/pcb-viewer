@@ -1,4 +1,4 @@
-#include "preprocessing.h"
+#include "image_utils.h"
 
 #include <stdint.h>
 #include <stdlib.h>
