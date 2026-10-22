@@ -6,6 +6,7 @@
 
 int main(void) {
   const char* input_path = "resources/png/standart.png";
+  const char* output_path = "resources/output.png";
 
   PcbImage* img = image_load(input_path);
 
@@ -45,8 +46,12 @@ int main(void) {
   Keypoint* keypoints = fast_detect(blurred_img, 20, &size);
 
   printf("Keypoints found: %d", size);
-  // for (int i = 0; i < size; ++i) {
-  //   printf("point: %d, %d, %lf\n", keypoints[i].x, keypoints[i].y, keypoints[i].score);
-  // }
+
+  PcbImage* rgb_image = grayscale_to_rgb(blurred_img);
+
+  draw_keypoints(rgb_image, keypoints, size);
+
+  image_save_png(rgb_image, output_path);
+
   return 0;
 }

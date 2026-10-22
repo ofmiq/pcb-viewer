@@ -19,9 +19,9 @@ static inline PixelState classify_pixel(uint8_t center, uint8_t sample, int thre
   return PIXEL_SIMILAR;
 }
 
-static inline double compute_fast_score(PcbImage* img, int x, int y, uint8_t p, int threshold,
+static inline double compute_fast_score(const PcbImage* img, int x, int y, uint8_t p, int threshold,
                                         PixelState target_state) {
-  if (img == NULL) {
+  if (!img) {
     return 0.0;
   }
 
@@ -49,8 +49,8 @@ static inline double compute_fast_score(PcbImage* img, int x, int y, uint8_t p, 
   }
 }
 
-Keypoint* fast_detect(PcbImage* img, int threshold, int* count_out) {
-  if (img == NULL) {
+Keypoint* fast_detect(const PcbImage* img, int threshold, int* count_out) {
+  if (!img) {
     return NULL;
   }
 
@@ -58,7 +58,7 @@ Keypoint* fast_detect(PcbImage* img, int threshold, int* count_out) {
   int count = 0;
 
   Keypoint* keypoints = (Keypoint*)malloc(sizeof(Keypoint) * capacity);
-  if (keypoints == NULL) {
+  if (!keypoints) {
     return NULL;
   }
 
