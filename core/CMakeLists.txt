@@ -37,4 +37,13 @@ target_compile_options(test_pipeline PRIVATE
 target_compile_options(test_orb PRIVATE
     -Wall
     -Wextra
+    -fsanitize=address,leak,undefined
+    -g
+    -fno-omit-frame-pointer
+)
+
+target_link_options(test_orb PRIVATE
+    -fsanitize=address,leak,undefined
+    -g
+    -fno-omit-frame-pointer
 )

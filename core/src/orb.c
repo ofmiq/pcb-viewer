@@ -53,17 +53,17 @@ static inline double compute_fast_score(const PcbImage* img, int x, int y, uint8
 static int keypoints_comparator(const void* a, const void* b) {
   const Keypoint* k1 = (const Keypoint*)a;
   const Keypoint* k2 = (const Keypoint*)b;
-  if (k1->score > k2->score) {
+  if (k1->score < k2->score) {
     return 1;
   }
-  if (k1->score < k2->score) {
+  if (k1->score > k2->score) {
     return -1;
   }
   return 0;
 }
 
 Keypoint* fast_detect(const PcbImage* img, int threshold, int* count_out) {
-  if (!img) {
+  if (!img || threshold <= 0 || !count_out) {
     return NULL;
   }
 
@@ -82,9 +82,6 @@ Keypoint* fast_detect(const PcbImage* img, int threshold, int* count_out) {
     for (int x = 3; x < width - 3; ++x) {
       int center_idx = y * width + x;
       uint8_t p = img->data[center_idx];
-
-      int upper_limit = p + threshold;
-      int lower_limit = p - threshold;
 
       int candidate_indices[4] = {center_idx - 3 * width, center_idx + 3, center_idx + 3 * width,
                                   center_idx - 3};
@@ -108,7 +105,7 @@ Keypoint* fast_detect(const PcbImage* img, int threshold, int* count_out) {
 
       PixelState target_state = (lighter >= 3) ? PIXEL_LIGHTER : PIXEL_DARKER;
       int consecutive = 0;
-      bool is_found = 0;
+      bool is_found = false;
 
       for (int i = 0; i < 24; ++i) {
         int idx = i % 16;
@@ -118,7 +115,7 @@ Keypoint* fast_detect(const PcbImage* img, int threshold, int* count_out) {
 
         if (state == target_state) {
           ++consecutive;
-          if (consecutive >= 9) {
+          if (consecutive >= 12) {
             is_found = true;
             break;
           }
@@ -149,6 +146,9 @@ Keypoint* fast_detect(const PcbImage* img, int threshold, int* count_out) {
   }
 
   *count_out = count;
+
+  qsort(keypoints, count, sizeof(Keypoint), keypoints_comparator);
+
   return keypoints;
 }
 
@@ -160,19 +160,8 @@ Keypoint* nms_suppress(const Keypoint* keypoints, int count, int radius, int* ou
     return NULL;
   }
 
-  Keypoint* sorted_keypoints = (Keypoint*)malloc(sizeof(Keypoint) * count);
-  if (!sorted_keypoints) {
-    *out_count = 0;
-    return NULL;
-  }
-
-  memcpy(sorted_keypoints, keypoints, sizeof(Keypoint) * count);
-
-  qsort(sorted_keypoints, count, sizeof(Keypoint), keypoints_comparator);
-
   bool* suppressed = (bool*)calloc(count, 1);
   if (!suppressed) {
-    free(sorted_keypoints);
     *out_count = 0;
     return NULL;
   }
@@ -188,8 +177,8 @@ Keypoint* nms_suppress(const Keypoint* keypoints, int count, int radius, int* ou
     ++kept_count;
 
     for (int j = i + 1; j < count; ++j) {
-      int dx = sorted_keypoints[i].x - sorted_keypoints[j].x;
-      int dy = sorted_keypoints[i].y - sorted_keypoints[j].y;
+      int dx = keypoints[i].x - keypoints[j].x;
+      int dy = keypoints[i].y - keypoints[j].y;
       int distance_squared = dx * dx + dy * dy;
       if (distance_squared <= radius_squared) {
         suppressed[j] = true;
@@ -200,7 +189,6 @@ Keypoint* nms_suppress(const Keypoint* keypoints, int count, int radius, int* ou
   Keypoint* result = (Keypoint*)malloc(sizeof(Keypoint) * kept_count);
   if (!result) {
     free(suppressed);
-    free(sorted_keypoints);
     *out_count = 0;
     return NULL;
   }
@@ -208,14 +196,32 @@ Keypoint* nms_suppress(const Keypoint* keypoints, int count, int radius, int* ou
   int idx = 0;
   for (int i = 0; i < count; ++i) {
     if (suppressed[i] == false) {
-      result[idx++] = sorted_keypoints[i];
+      result[idx++] = keypoints[i];
     }
   }
 
   *out_count = kept_count;
 
   free(suppressed);
-  free(sorted_keypoints);
+
+  return result;
+}
+
+Keypoint* top_k_select(const Keypoint* keypoints, int count, int k, int* out_count) {
+  if (!keypoints || count <= 0 || k <= 0 || !out_count) {
+    return NULL;
+  }
+
+  k = (k > count) ? count : k;
+
+  Keypoint* result = (Keypoint*)malloc(sizeof(Keypoint) * k);
+  if (!result) {
+    return NULL;
+  }
+
+  for (int i = 0; i < k; ++i) {
+    result[i] = keypoints[i];
+  }
 
   return result;
 }
