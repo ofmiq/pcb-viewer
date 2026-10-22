@@ -2,6 +2,7 @@
 
 #include <stdbool.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "image.h"
 
@@ -47,6 +48,18 @@ static inline double compute_fast_score(const PcbImage* img, int x, int y, uint8
   } else {
     return (sum_dark > 0.0) ? sum_dark : 0.0;
   }
+}
+
+static int keypoints_comparator(const void* a, const void* b) {
+  const Keypoint* k1 = (const Keypoint*)a;
+  const Keypoint* k2 = (const Keypoint*)b;
+  if (k1->score > k2->score) {
+    return 1;
+  }
+  if (k1->score < k2->score) {
+    return -1;
+  }
+  return 0;
 }
 
 Keypoint* fast_detect(const PcbImage* img, int threshold, int* count_out) {
@@ -137,4 +150,72 @@ Keypoint* fast_detect(const PcbImage* img, int threshold, int* count_out) {
 
   *count_out = count;
   return keypoints;
+}
+
+Keypoint* nms_suppress(const Keypoint* keypoints, int count, int radius, int* out_count) {
+  if (!keypoints || count <= 0 || !out_count) {
+    if (out_count) {
+      *out_count = 0;
+    }
+    return NULL;
+  }
+
+  Keypoint* sorted_keypoints = (Keypoint*)malloc(sizeof(Keypoint) * count);
+  if (!sorted_keypoints) {
+    *out_count = 0;
+    return NULL;
+  }
+
+  memcpy(sorted_keypoints, keypoints, sizeof(Keypoint) * count);
+
+  qsort(sorted_keypoints, count, sizeof(Keypoint), keypoints_comparator);
+
+  bool* suppressed = (bool*)calloc(count, 1);
+  if (!suppressed) {
+    free(sorted_keypoints);
+    *out_count = 0;
+    return NULL;
+  }
+
+  int kept_count = 0;
+  int radius_squared = radius * radius;
+
+  for (int i = 0; i < count; ++i) {
+    if (suppressed[i]) {
+      continue;
+    }
+
+    ++kept_count;
+
+    for (int j = i + 1; j < count; ++j) {
+      int dx = sorted_keypoints[i].x - sorted_keypoints[j].x;
+      int dy = sorted_keypoints[i].y - sorted_keypoints[j].y;
+      int distance_squared = dx * dx + dy * dy;
+      if (distance_squared <= radius_squared) {
+        suppressed[j] = true;
+      }
+    }
+  }
+
+  Keypoint* result = (Keypoint*)malloc(sizeof(Keypoint) * kept_count);
+  if (!result) {
+    free(suppressed);
+    free(sorted_keypoints);
+    *out_count = 0;
+    return NULL;
+  }
+
+  int idx = 0;
+  for (int i = 0; i < count; ++i) {
+    if (suppressed[i] == false) {
+      result[idx++] = sorted_keypoints[i];
+    }
+  }
+
+  *out_count = kept_count;
+
+  free(suppressed);
+  free(sorted_keypoints);
+
+  return result;
 }
