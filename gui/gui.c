@@ -147,7 +147,7 @@ do_images (GtkWidget *do_widget)
       gtk_box_append (GTK_BOX (vbox), frame);
 
       image = GTK_WIDGET (gtk_svg_widget_new ());
-      g_object_set (image, "resource", "/images/animated.gpa", NULL);
+      g_object_set (image, "resource", "~/Projects/pcb-viewer/resources/standart.jpg", NULL);
       gtk_widget_set_size_request (image, 128, 128);
       gtk_frame_set_child (GTK_FRAME (frame), image);
 
