@@ -1,43 +1,12 @@
 #include <gtk/gtk.h>
-#include <glib/gstdio.h>
-#include <stdio.h>
-#include <errno.h>
-#include "pixbufpaintable.h"
 
 static GtkWidget *window = NULL;
 
-static void
-toggle_sensitivity_callback (GtkWidget *togglebutton,
-                             gpointer   user_data)
+GtkWidget *do_images (GtkWidget *do_widget)
 {
-  GtkWidget *child;
-
-  for (child = gtk_widget_get_first_child (GTK_WIDGET (user_data));
-       child != NULL;
-       child = gtk_widget_get_next_sibling (child))
-    {
-      /* don't disable our toggle */
-      if (child != togglebutton)
-        gtk_widget_set_sensitive (child, !gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (togglebutton)));
-    }
-}
-
-
-GtkWidget *
-do_images (GtkWidget *do_widget)
-{
-  GtkWidget *video;
   GtkWidget *frame;
   GtkWidget *vbox;
-  GtkWidget *hbox;
-  GtkWidget *base_vbox;
-  GtkWidget *image;
   GtkWidget *picture;
-  GtkWidget *label;
-  GtkWidget *button;
-  GdkPaintable *paintable;
-  GtkWidget *state;
-  GIcon *gicon;
 
   if (!window)
     {
@@ -47,141 +16,30 @@ do_images (GtkWidget *do_widget)
       gtk_window_set_title (GTK_WINDOW (window), "Images");
       g_object_add_weak_pointer (G_OBJECT (window), (gpointer*)&window);
 
-      base_vbox = gtk_box_new (GTK_ORIENTATION_VERTICAL, 8);
-      gtk_widget_set_margin_start (base_vbox, 16);
-      gtk_widget_set_margin_end (base_vbox, 16);
-      gtk_widget_set_margin_top (base_vbox, 16);
-      gtk_widget_set_margin_bottom (base_vbox, 16);
-      gtk_window_set_child (GTK_WINDOW (window), base_vbox);
-
-      hbox = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 16);
-      gtk_box_append (GTK_BOX (base_vbox), hbox);
-
       vbox = gtk_box_new (GTK_ORIENTATION_VERTICAL, 8);
-      gtk_box_append (GTK_BOX (hbox), vbox);
+      gtk_widget_set_margin_start (vbox, 16);
+      gtk_widget_set_margin_end (vbox, 16);
+      gtk_widget_set_margin_top (vbox, 16);
+      gtk_widget_set_margin_bottom (vbox, 16);
+      gtk_window_set_child (GTK_WINDOW (window), vbox);
 
-      label = gtk_label_new ("Image from a resource");
-      gtk_widget_add_css_class (label, "heading");
-      gtk_box_append (GTK_BOX (vbox), label);
-
+    
       frame = gtk_frame_new (NULL);
       gtk_widget_set_halign (frame, GTK_ALIGN_CENTER);
       gtk_widget_set_valign (frame, GTK_ALIGN_CENTER);
       gtk_box_append (GTK_BOX (vbox), frame);
 
-      image = gtk_image_new_from_resource ("/images/org.gtk.Demo4.svg");
-      gtk_image_set_icon_size (GTK_IMAGE (image), GTK_ICON_SIZE_LARGE);
-
-      gtk_frame_set_child (GTK_FRAME (frame), image);
-
-
-      /* Animation */
-
-      label = gtk_label_new ("Animation from a resource");
-      gtk_widget_add_css_class (label, "heading");
-      gtk_box_append (GTK_BOX (vbox), label);
-
-      frame = gtk_frame_new (NULL);
-      gtk_widget_set_halign (frame, GTK_ALIGN_CENTER);
-      gtk_widget_set_valign (frame, GTK_ALIGN_CENTER);
-      gtk_box_append (GTK_BOX (vbox), frame);
-
-      paintable = pixbuf_paintable_new_from_resource ("/images/floppybuddy.gif");
-      picture = gtk_picture_new_for_paintable (paintable);
-      g_object_unref (paintable);
-
+      picture = gtk_picture_new_for_filename("");
+      gtk_picture_set_content_fit (GTK_PICTURE (picture), GTK_CONTENT_FIT_CONTAIN);
       gtk_frame_set_child (GTK_FRAME (frame), picture);
 
-      /* Symbolic icon */
+      if (!gtk_widget_get_visible (window)) {
+        gtk_widget_set_visible (window, TRUE);
+      }
+      else {
+        gtk_window_destroy (GTK_WINDOW (window));
+      }
 
-      label = gtk_label_new ("Symbolic themed icon");
-      gtk_widget_add_css_class (label, "heading");
-      gtk_box_append (GTK_BOX (vbox), label);
-
-      frame = gtk_frame_new (NULL);
-      gtk_widget_set_halign (frame, GTK_ALIGN_CENTER);
-      gtk_widget_set_valign (frame, GTK_ALIGN_CENTER);
-      gtk_box_append (GTK_BOX (vbox), frame);
-
-      gicon = g_themed_icon_new_with_default_fallbacks ("battery-level-10-charging-symbolic");
-      image = gtk_image_new_from_gicon (gicon);
-      gtk_image_set_icon_size (GTK_IMAGE (image), GTK_ICON_SIZE_LARGE);
-      g_object_unref (gicon);
-
-      gtk_frame_set_child (GTK_FRAME (frame), image);
-
-
-      /* Stateful */
-
-      vbox = gtk_box_new (GTK_ORIENTATION_VERTICAL, 8);
-      gtk_box_append (GTK_BOX (hbox), vbox);
-
-      label = gtk_label_new ("Stateful icon");
-      gtk_widget_add_css_class (label, "heading");
-      gtk_box_append (GTK_BOX (vbox), label);
-
-      frame = gtk_frame_new (NULL);
-      gtk_widget_set_halign (frame, GTK_ALIGN_CENTER);
-      gtk_widget_set_valign (frame, GTK_ALIGN_CENTER);
-      gtk_box_append (GTK_BOX (vbox), frame);
-
-      image = GTK_WIDGET (gtk_svg_widget_new ());
-      g_object_set (image, "resource", "/images/stateful.gpa", NULL);
-      gtk_widget_set_size_request (image, 128, 128);
-      gtk_frame_set_child (GTK_FRAME (frame), image);
-
-      state = gtk_switch_new ();
-      gtk_widget_set_halign (state, GTK_ALIGN_START);
-      g_object_bind_property (state, "active", image, "state", G_BINDING_DEFAULT);
-      gtk_box_append (GTK_BOX (vbox), state);
-
-      /* Animations */
-
-      label = gtk_label_new ("Path animation");
-      gtk_widget_add_css_class (label, "heading");
-      gtk_box_append (GTK_BOX (vbox), label);
-
-      frame = gtk_frame_new (NULL);
-      gtk_widget_set_halign (frame, GTK_ALIGN_CENTER);
-      gtk_widget_set_valign (frame, GTK_ALIGN_CENTER);
-      gtk_box_append (GTK_BOX (vbox), frame);
-
-      image = GTK_WIDGET (gtk_svg_widget_new ());
-      g_object_set (image, "resource", "~/Projects/pcb-viewer/resources/standart.jpg", NULL);
-      gtk_widget_set_size_request (image, 128, 128);
-      gtk_frame_set_child (GTK_FRAME (frame), image);
-
-      
-      /* Widget paintables */
-      vbox = gtk_box_new (GTK_ORIENTATION_VERTICAL, 8);
-      gtk_box_append (GTK_BOX (hbox), vbox);
-
-      label = gtk_label_new ("GtkWidgetPaintable");
-      gtk_widget_add_css_class (label, "heading");
-      gtk_box_append (GTK_BOX (vbox), label);
-
-      paintable = gtk_widget_paintable_new (do_widget);
-      picture = gtk_picture_new_for_paintable (paintable);
-      gtk_widget_set_size_request (picture, 100, 100);
-      gtk_widget_set_valign (picture, GTK_ALIGN_START);
-      gtk_box_append (GTK_BOX (vbox), picture);
-
-      /* Sensitivity control */
-      button = gtk_toggle_button_new_with_mnemonic ("_Insensitive");
-      gtk_widget_set_halign (button, GTK_ALIGN_END);
-      gtk_widget_set_valign (button, GTK_ALIGN_END);
-      gtk_widget_set_vexpand (button, TRUE);
-      gtk_box_append (GTK_BOX (base_vbox), button);
-
-      g_signal_connect (button, "toggled",
-                        G_CALLBACK (toggle_sensitivity_callback),
-                        base_vbox);
-    }
-
-  if (!gtk_widget_get_visible (window))
-    gtk_widget_set_visible (window, TRUE);
-  else
-    gtk_window_destroy (GTK_WINDOW (window));
 
   return window;
 }
