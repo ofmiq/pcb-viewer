@@ -1,8 +1,8 @@
-#include <gtk/gtk.h>
+#include "gui.h";
 
 static GtkWidget *window = NULL;
 
-GtkWidget *do_images (GtkWidget *do_widget)
+GtkWidget *do_image (GtkWidget *do_widget)
 {
   GtkWidget *frame;
   GtkWidget *vbox;
@@ -29,7 +29,7 @@ GtkWidget *do_images (GtkWidget *do_widget)
       gtk_widget_set_valign (frame, GTK_ALIGN_CENTER);
       gtk_box_append (GTK_BOX (vbox), frame);
 
-      picture = gtk_picture_new_for_filename("");
+      picture = gtk_picture_new_for_filename("pcb-viewer/resources/standart.png");
       gtk_picture_set_content_fit (GTK_PICTURE (picture), GTK_CONTENT_FIT_CONTAIN);
       gtk_frame_set_child (GTK_FRAME (frame), picture);
 
@@ -44,3 +44,14 @@ GtkWidget *do_images (GtkWidget *do_widget)
   return window;
 }
 
+int show_image(int argc, int *argv[]) {
+  GtkApplication *app;
+  int status;
+
+  app = gtk_application_new("viewer.example", G_APPLICATION_DEFAULT_FLAG);
+  g_signal_connect (app, "activate", G_CALLBACK(do_image), NULL);
+  status = g_application_run (G_APPLICATION (app), argc, argv);
+  g_object_unref (app);
+  
+  return status;
+}
