@@ -1,7 +1,7 @@
 #ifndef GUI_H
 #define GUI_H
 
-#include <gtk/gkt.h>
+#include <gtk/gtk.h>
 
 int show_image(int argc, char *argv[]);
 

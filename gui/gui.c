@@ -1,4 +1,4 @@
-#include "gui.h";
+#include "gui.h"
 
 static GtkWidget *window = NULL;
 
@@ -8,8 +8,7 @@ GtkWidget *do_image (GtkWidget *do_widget)
   GtkWidget *vbox;
   GtkWidget *picture;
 
-  if (!window)
-    {
+  if (!window) {
       window = gtk_window_new ();
       gtk_window_set_display (GTK_WINDOW (window),
                               gtk_widget_get_display (do_widget));
@@ -39,16 +38,16 @@ GtkWidget *do_image (GtkWidget *do_widget)
       else {
         gtk_window_destroy (GTK_WINDOW (window));
       }
-
+  }
 
   return window;
 }
 
-int show_image(int argc, int *argv[]) {
+int show_image(int argc, char *argv[]) {
   GtkApplication *app;
   int status;
 
-  app = gtk_application_new("viewer.example", G_APPLICATION_DEFAULT_FLAG);
+  app = gtk_application_new("viewer.example", G_APPLICATION_DEFAULT_FLAGS);
   g_signal_connect (app, "activate", G_CALLBACK(do_image), NULL);
   status = g_application_run (G_APPLICATION (app), argc, argv);
   g_object_unref (app);
