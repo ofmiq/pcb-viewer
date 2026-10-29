@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "brief_patern.h"
 #include "image.h"
 
 // OFFSETS FOR TRAVERSAL BY CIRCLE
@@ -224,4 +225,42 @@ Keypoint* top_k_select(const Keypoint* keypoints, int count, int k, int* out_cou
   }
 
   return result;
+}
+
+void brief_compute_descriptors(const PcbImage* img, Keypoint* keypoints, int count) {
+  if (!img || !keypoints || count <= 0) {
+    return;
+  }
+
+  int half_patch = BRIEF_HALF_PATCH;
+  int height = img->height;
+  int width = img->width;
+
+  for (int i = 0; i < count; ++i) {
+    int cx = keypoints[i].x;
+    int cy = keypoints[i].y;
+
+    memset(keypoints[i].descriptor.bytes, 0, BRIEF_DESCRIPTOR_BYTES);
+
+    if (cx - half_patch < 0 || cx + half_patch >= width || cy - half_patch < 0 ||
+        cy + half_patch >= height) {
+      continue;
+    }
+
+    for (int p = 0; p < BRIEF_DESCRIPTOR_BYTES * 8; ++p) {
+      int x1 = cx + BRIEF_PATTERN[p * 4 + 0];
+      int y1 = cy + BRIEF_PATTERN[p * 4 + 1];
+      int x2 = cx + BRIEF_PATTERN[p * 4 + 2];
+      int y2 = cy + BRIEF_PATTERN[p * 4 + 3];
+
+      uint8_t p1_val = img->data[y1 * width + x1];
+      uint8_t p2_val = img->data[y2 * width + x2];
+
+      if (p1_val < p2_val) {
+        int byte_idx = p / 8;
+        int bit_idx = p % 8;
+        keypoints[i].descriptor.bytes[byte_idx] |= (1 << bit_idx);
+      }
+    }
+  }
 }
