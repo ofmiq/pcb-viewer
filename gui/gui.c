@@ -2,16 +2,14 @@
 
 static GtkWidget *window = NULL;
 
-GtkWidget *do_image (GtkWidget *do_widget)
-{
+GtkWidget *do_image (GtkApplication* app) {
   GtkWidget *frame;
   GtkWidget *vbox;
   GtkWidget *picture;
 
   if (!window) {
-      window = gtk_window_new ();
-      gtk_window_set_display (GTK_WINDOW (window),
-                              gtk_widget_get_display (do_widget));
+      window = gtk_application_window_new (app);
+
       gtk_window_set_title (GTK_WINDOW (window), "Images");
       g_object_add_weak_pointer (G_OBJECT (window), (gpointer*)&window);
 
@@ -28,22 +26,24 @@ GtkWidget *do_image (GtkWidget *do_widget)
       gtk_widget_set_valign (frame, GTK_ALIGN_CENTER);
       gtk_box_append (GTK_BOX (vbox), frame);
 
-      picture = gtk_picture_new_for_filename("pcb-viewer/resources/standart.png");
+      
+      picture = gtk_picture_new_for_filename("resources/standart.png");
       gtk_picture_set_content_fit (GTK_PICTURE (picture), GTK_CONTENT_FIT_CONTAIN);
       gtk_frame_set_child (GTK_FRAME (frame), picture);
 
       if (!gtk_widget_get_visible (window)) {
         gtk_widget_set_visible (window, TRUE);
       }
-      else {
-        gtk_window_destroy (GTK_WINDOW (window));
-      }
+
+  }
+  else {
+    gtk_window_destroy (GTK_WINDOW (window));
   }
 
   return window;
 }
 
-int show_image(int argc, char *argv[]) {
+int show_image (int argc, char **argv) {
   GtkApplication *app;
   int status;
 
