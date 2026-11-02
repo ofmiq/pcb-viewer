@@ -232,20 +232,23 @@ Keypoint* top_k_select(const Keypoint* keypoints, int count, int k, int* out_cou
   return result;
 }
 
-void brief_compute_descriptors(const PcbImage* img, Keypoint* keypoints, int count) {
+Descriptor* brief_compute_descriptors(const PcbImage* img, Keypoint* keypoints, int count) {
   if (!img || !keypoints || count <= 0) {
-    return;
+    return NULL;
   }
 
   int half_patch = BRIEF_HALF_PATCH;
   int height = img->height;
   int width = img->width;
 
+  Descriptor* descriptors = calloc(count, sizeof(Descriptor));
+  if (!descriptors) {
+    return NULL;
+  }
+
   for (int i = 0; i < count; ++i) {
     int cx = keypoints[i].x;
     int cy = keypoints[i].y;
-
-    memset(keypoints[i].descriptor.bytes, 0, BRIEF_DESCRIPTOR_BYTES);
 
     if (cx - half_patch < 0 || cx + half_patch >= width || cy - half_patch < 0 ||
         cy + half_patch >= height) {
@@ -264,10 +267,12 @@ void brief_compute_descriptors(const PcbImage* img, Keypoint* keypoints, int cou
       if (p1_val < p2_val) {
         int byte_idx = p / 8;
         int bit_idx = p % 8;
-        keypoints[i].descriptor.bytes[byte_idx] |= (1 << bit_idx);
+        descriptors[i].bytes[byte_idx] |= (1 << bit_idx);
       }
     }
   }
+
+  return descriptors;
 }
 
 int brief_hamming_distance(const uint8_t* lhs, const uint8_t* rhs) {
@@ -283,7 +288,8 @@ int brief_hamming_distance(const uint8_t* lhs, const uint8_t* rhs) {
   return distance;
 }
 
-Match* brief_match_descriptors(const Keypoint* keys1, int count1, const Keypoint* keys2, int count2,
+Match* brief_match_descriptors(const Keypoint* keys1, const Descriptor* desc1, int count1,
+                               const Keypoint* keys2, const Descriptor* desc2, int count2,
                                int* out_count) {
   if (!keys1 || count1 <= 0 || !keys2 || count2 <= 0 || !out_count) {
     if (out_count) *out_count = 0;
@@ -304,7 +310,7 @@ Match* brief_match_descriptors(const Keypoint* keys1, int count1, const Keypoint
     int best_idx = -1;
 
     for (int j = 0; j < count2; ++j) {
-      int dist = brief_hamming_distance(keys1[i].descriptor.bytes, keys2[j].descriptor.bytes);
+      int dist = brief_hamming_distance(desc1[i].bytes, desc2[j].bytes);
 
       if (dist < best_dist) {
         best_dist = dist;

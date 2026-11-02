@@ -82,10 +82,13 @@ int main() {
 
   printf("[CORE] Standart keypoints: %d | Cropped keypoints: %d\n", standart_size, cropped_size);
 
+  Descriptor* standart_descriptors;
   double standart_descriptors_time =
-      TIME_EXEC(brief_compute_descriptors(standart_img, standart_keypoints, standart_size));
-  double cropped_descriptors_time =
-      TIME_EXEC(brief_compute_descriptors(cropped_img, cropped_keypoints, cropped_size));
+      TIME_EXEC(standart_descriptors =
+                    brief_compute_descriptors(standart_img, standart_keypoints, standart_size));
+  Descriptor* cropped_descriptors;
+  double cropped_descriptors_time = TIME_EXEC(cropped_descriptors = brief_compute_descriptors(
+                                                  cropped_img, cropped_keypoints, cropped_size));
 
   image_free(standart_img);
   image_free(cropped_img);
@@ -93,8 +96,9 @@ int main() {
   int matches_size = 0;
   Match* matches;
   double match_time =
-      TIME_EXEC(matches = brief_match_descriptors(standart_keypoints, standart_size,
-                                                  cropped_keypoints, cropped_size, &matches_size));
+      TIME_EXEC(matches = brief_match_descriptors(
+                    standart_keypoints, standart_descriptors, standart_size, cropped_keypoints,
+                    cropped_descriptors, cropped_size, &matches_size));
 
   int correct_matches = 0;
   int offset_x = 60;
@@ -145,6 +149,8 @@ int main() {
   free(matches);
   free(standart_keypoints);
   free(cropped_keypoints);
+  free(standart_descriptors);
+  free(cropped_descriptors);
 
   return 0;
 }

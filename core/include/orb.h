@@ -15,7 +15,6 @@ typedef struct {
   int x;
   int y;
   double score;
-  Descriptor descriptor;
 } Keypoint;
 
 typedef struct {
@@ -30,8 +29,9 @@ Keypoint* fast_detect(const PcbImage* img, int threshold, int* count_out);
 Keypoint* nms_suppress(const Keypoint* keypoints, int count, int radius, int* out_count);
 Keypoint* top_k_select(const Keypoint* keypoints, int count, int k, int* out_count);
 
-void brief_compute_descriptors(const PcbImage* img, Keypoint* keypoints, int count);
+Descriptor* brief_compute_descriptors(const PcbImage* img, Keypoint* keypoints, int count);
 int brief_hamming_distance(const uint8_t* lhs, const uint8_t* rhs);
-Match* brief_match_descriptors(const Keypoint* keys1, int count1, const Keypoint* keys2, int count2,
+Match* brief_match_descriptors(const Keypoint* keys1, const Descriptor* desc1, int count1,
+                               const Keypoint* keys2, const Descriptor* desc2, int count2,
                                int* out_count);
 #endif  // ORB_H
