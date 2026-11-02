@@ -66,19 +66,30 @@ int main(void) {
 
   free(suppresed_keypoints);
 
+  double compute_descriptors_time =
+      TIME_EXEC(brief_compute_descriptors(blurred_img, top_k_keypoints, top_k_size));
+
+  int matches_size = 0;
+  Match* matches = NULL;
+  double match_time =
+      TIME_EXEC(matches = brief_match_descriptors(top_k_keypoints, top_k_size, top_k_keypoints,
+                                                  top_k_size, &matches_size));
+
   PcbImage* rgb_image = grayscale_to_rgb(blurred_img);
   image_free(blurred_img);
 
-  int drawn = suppresed_size < K ? suppresed_size : K;
-  double drawing_time = TIME_EXEC(draw_keypoints(rgb_image, top_k_keypoints, drawn));
+  double drawing_time = TIME_EXEC(draw_keypoints(rgb_image, top_k_keypoints, top_k_size));
 
   image_save_png(rgb_image, output_path);
 
   printf("[Keypoints]: %.3f ms\n", keypoints_time);
   printf("[Suppresed keypoints]: %.3f ms\n", suppressed_keypoints_time);
   printf("[Top-K]: %.3f ms\n", top_k_keypoints_time);
+  printf("[DESCRIPTORS]: %.3f ms\n", compute_descriptors_time);
+  printf("[MATCHING]: %.3f ms (Matches: %d)\n", match_time, matches_size);
   printf("[Drawing]: %.3f ms\n", drawing_time);
 
+  free(matches);
   image_free(rgb_image);
   free(top_k_keypoints);
 

@@ -1,6 +1,8 @@
 #include "orb.h"
 
+#include <limits.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -217,12 +219,15 @@ Keypoint* top_k_select(const Keypoint* keypoints, int count, int k, int* out_cou
 
   Keypoint* result = (Keypoint*)malloc(sizeof(Keypoint) * k);
   if (!result) {
+    *out_count = 0;
     return NULL;
   }
 
   for (int i = 0; i < k; ++i) {
     result[i] = keypoints[i];
   }
+
+  *out_count = k;
 
   return result;
 }
@@ -263,4 +268,58 @@ void brief_compute_descriptors(const PcbImage* img, Keypoint* keypoints, int cou
       }
     }
   }
+}
+
+int brief_hamming_distance(const uint8_t* lhs, const uint8_t* rhs) {
+  int distance = 0;
+
+  const uint64_t* descriptor_a = (uint64_t*)lhs;
+  const uint64_t* descriptor_b = (uint64_t*)rhs;
+
+  for (int i = 0; i < 4; ++i) {
+    distance += __builtin_popcountll(descriptor_a[i] ^ descriptor_b[i]);
+  }
+
+  return distance;
+}
+
+Match* brief_match_descriptors(const Keypoint* keys1, int count1, const Keypoint* keys2, int count2,
+                               int* out_count) {
+  if (!keys1 || count1 <= 0 || !keys2 || count2 <= 0 || !out_count) {
+    if (out_count) *out_count = 0;
+    return NULL;
+  }
+
+  Match* matches = (Match*)malloc(sizeof(Match) * count1);
+  if (!matches) {
+    *out_count = 0;
+    return NULL;
+  }
+
+  int match_count = 0;
+  int threshold = 50;
+
+  for (int i = 0; i < count1; ++i) {
+    int best_dist = INT_MAX;
+    int best_idx = -1;
+
+    for (int j = 0; j < count2; ++j) {
+      int dist = brief_hamming_distance(keys1[i].descriptor.bytes, keys2[j].descriptor.bytes);
+
+      if (dist < best_dist) {
+        best_dist = dist;
+        best_idx = j;
+      }
+    }
+
+    if (best_dist <= threshold && best_idx != -1) {
+      matches[match_count].query_idx = i;
+      matches[match_count].train_idx = best_idx;
+      matches[match_count].distance = best_dist;
+      ++match_count;
+    }
+  }
+
+  *out_count = match_count;
+  return matches;
 }
