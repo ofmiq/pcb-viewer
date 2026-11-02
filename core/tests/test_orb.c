@@ -10,88 +10,141 @@
 #define RADIUS 3
 #define K 2000
 
-int main(void) {
-  const char* input_path = "resources/png/standart.png";
-  const char* output_path = "resources/output.png";
+PcbImage* preprocess_pipeline(const char* filepath) {
+  PcbImage* img = image_load(filepath);
+  if (!img) return NULL;
 
-  PcbImage* img = image_load(input_path);
-  if (!img) {
-    printf("[CORE] Failed to load %s\n", input_path);
-    return 1;
-  }
+  // PcbImage* scaled = preprocess_downscale(img, 1200);
+  // image_free(img);
+  // if (!scaled) return NULL;
 
-  PcbImage* scaled_img = preprocess_downscale(img, 1200);
+  PcbImage* gray = preprocess_grayscale(img);
   image_free(img);
+  if (!gray) return NULL;
 
-  if (!scaled_img) {
-    printf("[CORE] Downscaling failed\n");
-    return 1;
+  PcbImage* blurred = preprocess_gaussian_blur(gray);
+  image_free(gray);
+
+  return blurred;
+}
+
+Keypoint* find_keypoints(const PcbImage* img, int* out_size) {
+  int raw_size = 0;
+  Keypoint* keypoints = fast_detect(img, THRESHOLD, &raw_size);
+  if (!keypoints) {
+    *out_size = 0;
+    return NULL;
   }
 
-  PcbImage* grayscaled_img = preprocess_grayscale(scaled_img);
-  image_free(scaled_img);
-
-  if (!grayscaled_img) {
-    printf("[CORE] Grayscaling failed\n");
-    return 1;
-  }
-
-  PcbImage* blurred_img = preprocess_gaussian_blur(grayscaled_img);
-  image_free(grayscaled_img);
-
-  if (!blurred_img) {
-    printf("[CORE] Blurring failed\n");
-    return 1;
-  }
-
-  int size = 0;
-  Keypoint* keypoints;
-  double keypoints_time = TIME_EXEC(keypoints = fast_detect(blurred_img, THRESHOLD, &size));
-
-  printf("[CORE] Num of keypoints: %d\n", size);
-
-  int suppresed_size = 0;
-  Keypoint* suppresed_keypoints;
-  double suppressed_keypoints_time =
-      TIME_EXEC(suppresed_keypoints = nms_suppress(keypoints, size, RADIUS, &suppresed_size));
-
+  int nms_size = 0;
+  Keypoint* nms_keypoints = nms_suppress(keypoints, raw_size, RADIUS, &nms_size);
   free(keypoints);
 
-  printf("[CORE] Num of suppresed keypoints: %d\n", suppresed_size);
+  Keypoint* top_k_keypoints = top_k_select(nms_keypoints, nms_size, K, out_size);
+  free(nms_keypoints);
 
-  int top_k_size = 0;
-  Keypoint* top_k_keypoints;
-  double top_k_keypoints_time = TIME_EXEC(
-      top_k_keypoints = top_k_select(suppresed_keypoints, suppresed_size, K, &top_k_size));
+  return top_k_keypoints;
+}
 
-  free(suppresed_keypoints);
+int main() {
+  const char* standart_path = "resources/png/standart.png";
+  const char* cropped_path = "resources/png/crop.png";
 
-  double compute_descriptors_time =
-      TIME_EXEC(brief_compute_descriptors(blurred_img, top_k_keypoints, top_k_size));
+  struct timespec global_start_t, global_end_t;
+  clock_gettime(CLOCK_MONOTONIC, &global_start_t);
+
+  PcbImage* standart_img;
+  double standart_pipeline_time = TIME_EXEC(standart_img = preprocess_pipeline(standart_path));
+
+  PcbImage* cropped_img;
+  double cropped_pipeline_time = TIME_EXEC(cropped_img = preprocess_pipeline(cropped_path));
+
+  if (!standart_img || !cropped_img) {
+    printf("[CORE] Failed to load or preprocess images\n");
+    if (standart_img) {
+      image_free(standart_img);
+    }
+    if (cropped_img) {
+      image_free(cropped_img);
+    }
+    return 1;
+  }
+
+  int standart_size = 0;
+  int cropped_size = 0;
+
+  Keypoint* standart_keypoints;
+  double standart_keypoints_time =
+      TIME_EXEC(standart_keypoints = find_keypoints(standart_img, &standart_size));
+  Keypoint* cropped_keypoints;
+  double cropped_keypoints_time =
+      TIME_EXEC(cropped_keypoints = find_keypoints(cropped_img, &cropped_size));
+
+  printf("[CORE] Standart keypoints: %d | Cropped keypoints: %d\n", standart_size, cropped_size);
+
+  double standart_descriptors_time =
+      TIME_EXEC(brief_compute_descriptors(standart_img, standart_keypoints, standart_size));
+  double cropped_descriptors_time =
+      TIME_EXEC(brief_compute_descriptors(cropped_img, cropped_keypoints, cropped_size));
+
+  image_free(standart_img);
+  image_free(cropped_img);
 
   int matches_size = 0;
-  Match* matches = NULL;
+  Match* matches;
   double match_time =
-      TIME_EXEC(matches = brief_match_descriptors(top_k_keypoints, top_k_size, top_k_keypoints,
-                                                  top_k_size, &matches_size));
+      TIME_EXEC(matches = brief_match_descriptors(standart_keypoints, standart_size,
+                                                  cropped_keypoints, cropped_size, &matches_size));
 
-  PcbImage* rgb_image = grayscale_to_rgb(blurred_img);
-  image_free(blurred_img);
+  int correct_matches = 0;
+  int offset_x = 60;
+  int offset_y = 40;
+  int tolerance = 1;
 
-  double drawing_time = TIME_EXEC(draw_keypoints(rgb_image, top_k_keypoints, top_k_size));
+  for (int i = 0; i < matches_size; ++i) {
+    int q_idx = matches[i].query_idx;
+    int t_idx = matches[i].train_idx;
 
-  image_save_png(rgb_image, output_path);
+    int x_global = standart_keypoints[q_idx].x;
+    int y_global = standart_keypoints[q_idx].y;
 
-  printf("[Keypoints]: %.3f ms\n", keypoints_time);
-  printf("[Suppresed keypoints]: %.3f ms\n", suppressed_keypoints_time);
-  printf("[Top-K]: %.3f ms\n", top_k_keypoints_time);
-  printf("[DESCRIPTORS]: %.3f ms\n", compute_descriptors_time);
-  printf("[MATCHING]: %.3f ms (Matches: %d)\n", match_time, matches_size);
-  printf("[Drawing]: %.3f ms\n", drawing_time);
+    int x_crop = cropped_keypoints[t_idx].x;
+    int y_crop = cropped_keypoints[t_idx].y;
+
+    int expected_x = x_crop + offset_x;
+    int expected_y = y_crop + offset_y;
+
+    if (abs(x_global - expected_x) <= tolerance && abs(y_global - expected_y) <= tolerance) {
+      correct_matches++;
+    } else {
+      printf("Outlier! Global(%d,%d) vs CropMapped(%d,%d)\n", x_global, y_global, expected_x,
+             expected_y);
+    }
+  }
+
+  double accuracy = (matches_size > 0) ? ((double)correct_matches / matches_size) * 100.0 : 0.0;
+
+  clock_gettime(CLOCK_MONOTONIC, &global_end_t);
+
+  printf("== VALIDATION ==\n");
+  printf("Total pairs matched: %d\n", matches_size);
+  printf("Inliers:             %d\n", correct_matches);
+  printf("Outliners:           %d\n", matches_size - correct_matches);
+  printf("Accuracy:            %.3f%%\n", accuracy);
+
+  printf("== TIME ==\n");
+  printf("Pipeline:    Standart: %.3f ms; Cropped: %.3f ms\n", standart_pipeline_time,
+         cropped_pipeline_time);
+  printf("Keypoints:   Standart: %.3f ms; Cropped: %.3f ms\n", standart_keypoints_time,
+         cropped_keypoints_time);
+  printf("Descriptors: Standart: %.3f ms; Cropped: %.3f ms\n", standart_descriptors_time,
+         cropped_descriptors_time);
+  printf("Matching:    %.3f ms\n", match_time);
+  printf("TOTAL TIME:  %.3f ms\n", get_elapsed_ms(global_start_t, global_end_t));
 
   free(matches);
-  image_free(rgb_image);
-  free(top_k_keypoints);
+  free(standart_keypoints);
+  free(cropped_keypoints);
 
   return 0;
 }
