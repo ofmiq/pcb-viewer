@@ -307,22 +307,28 @@ Match* brief_match_descriptors(const Keypoint* keys1, const Descriptor* desc1, i
 
   for (int i = 0; i < count1; ++i) {
     int best_dist = INT_MAX;
+    int second_best_dist = INT_MAX;
     int best_idx = -1;
 
     for (int j = 0; j < count2; ++j) {
       int dist = brief_hamming_distance(desc1[i].bytes, desc2[j].bytes);
 
       if (dist < best_dist) {
+        second_best_dist = best_dist;
         best_dist = dist;
         best_idx = j;
+      } else if (dist < second_best_dist) {
+        second_best_dist = dist;
       }
     }
 
     if (best_dist <= threshold && best_idx != -1) {
-      matches[match_count].query_idx = i;
-      matches[match_count].train_idx = best_idx;
-      matches[match_count].distance = best_dist;
-      ++match_count;
+      if (best_dist * 4 < second_best_dist * 3) {
+        matches[match_count].query_idx = i;
+        matches[match_count].train_idx = best_idx;
+        matches[match_count].distance = best_dist;
+        ++match_count;
+      }
     }
   }
 
