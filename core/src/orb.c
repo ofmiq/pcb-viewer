@@ -81,8 +81,8 @@ Keypoint* fast_detect(const PcbImage* img, int threshold, int* count_out) {
   int height = img->height;
   int width = img->width;
 
-  for (int y = 3; y < height - 3; ++y) {
-    for (int x = 3; x < width - 3; ++x) {
+  for (int y = BRIEF_HALF_PATCH; y < img->height - BRIEF_HALF_PATCH; ++y) {
+    for (int x = BRIEF_HALF_PATCH; x < img->width - BRIEF_HALF_PATCH; ++x) {
       int center_idx = y * width + x;
       uint8_t p = img->data[center_idx];
 
@@ -110,7 +110,7 @@ Keypoint* fast_detect(const PcbImage* img, int threshold, int* count_out) {
       int consecutive = 0;
       bool is_found = false;
 
-      for (int i = 0; i < 24; ++i) {
+      for (int i = 0; i < 16 + FAST_ARC_LENGTH - 1; ++i) {
         int idx = i % 16;
         int p_idx = (y + CIRCLE_Y_OFFSETS[idx]) * width + (x + CIRCLE_X_OFFSETS[idx]);
 
@@ -118,7 +118,7 @@ Keypoint* fast_detect(const PcbImage* img, int threshold, int* count_out) {
 
         if (state == target_state) {
           ++consecutive;
-          if (consecutive >= 12) {
+          if (consecutive >= FAST_ARC_LENGTH) {
             is_found = true;
             break;
           }

@@ -3,6 +3,7 @@
 
 #include <image.h>
 
+#define FAST_ARC_LENGTH 12
 #define BRIEF_DESCRIPTOR_BYTES 32
 #define BRIEF_HALF_PATCH 15
 
