@@ -9,7 +9,7 @@
 #include "brief_patern.h"
 #include "config.h"
 #include "image.h"
-#include "image_utils.h"
+#include "preprocessing.c"
 
 // OFFSETS FOR TRAVERSAL BY CIRCLE
 static const int CIRCLE_X_OFFSETS[16] = {0, 1, 2, 3, 3, 3, 2, 1, 0, -1, -2, -3, -3, -3, -2, -1};

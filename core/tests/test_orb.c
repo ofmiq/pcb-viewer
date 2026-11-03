@@ -5,7 +5,7 @@
 
 #include "debug.h"
 #include "image.h"
-#include "image_utils.h"
+#include "preprocessing.h"
 #include "orb.h"
 
 PcbImage* standart_preprocess_pipeline(const PcbImage* img) {

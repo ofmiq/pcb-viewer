@@ -2,7 +2,7 @@
 
 #include "debug.h"
 #include "image.h"
-#include "image_utils.h"
+#include "preprocessing.h"
 
 int main(void) {
   const char* filenames[] = {"high_iso_noisy.png", "reflection.png", "standart.png"};

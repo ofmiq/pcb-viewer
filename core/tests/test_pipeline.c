@@ -2,7 +2,7 @@
 
 #include "debug.h"
 #include "image.h"
-#include "image_utils.h"
+#include "preprocessing.h"
 
 int main(void) {
   const char* input_path = "resources/png/standart.png";
