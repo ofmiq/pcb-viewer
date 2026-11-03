@@ -1,0 +1,15 @@
+#ifndef CONFIG_H
+#define CONFIG_H
+
+#define PYRAMID_MAX_LEVELS 6
+#define PYRAMID_SCALE_STEP 0.84
+
+#define FAST_ARC_LENGTH 12
+#define BRIEF_DESCRIPTOR_BYTES 32
+#define BRIEF_HALF_PATCH 15
+
+#define THRESHOLD 30
+#define RADIUS 3
+#define K 2000
+
+#endif  // CONFIG_H
