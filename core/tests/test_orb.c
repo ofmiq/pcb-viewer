@@ -3,10 +3,11 @@
 #include <stdlib.h>
 #include <time.h>
 
+#include "corners.h"
 #include "debug.h"
 #include "image.h"
-#include "preprocessing.h"
 #include "orb.h"
+#include "preprocessing.h"
 
 PcbImage* standart_preprocess_pipeline(const PcbImage* img) {
   if (!img) {
