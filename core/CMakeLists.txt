@@ -5,6 +5,7 @@ add_library(pcbcore STATIC
     src/orb.c
     src/preprocessing.c
     src/corners.c
+    src/matching.c
 )
 
 target_include_directories(pcbcore PUBLIC

@@ -6,6 +6,7 @@
 #include "corners.h"
 #include "debug.h"
 #include "image.h"
+#include "matching.h"
 #include "orb.h"
 #include "preprocessing.h"
 

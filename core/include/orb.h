@@ -5,12 +5,7 @@
 
 #include "config.h"
 #include "corners.h"
-
-typedef struct {
-  int query_idx;
-  int train_idx;
-  int distance;
-} Match;
+#include "matching.h"
 
 typedef struct {
   PcbImage* images[PYRAMID_MAX_LEVELS];
@@ -33,11 +28,6 @@ typedef struct {
   Match* matches;
   int count;
 } LevelResult;
-
-int brief_hamming_distance(const uint8_t* lhs, const uint8_t* rhs);
-Match* brief_match_descriptors(const Keypoint* keys1, const Descriptor* desc1, int count1,
-                               const Keypoint* keys2, const Descriptor* desc2, int count2,
-                               int* out_count);
 
 ImagePyramid* build_image_pyramid(const PcbImage* src);
 FeaturePyramid* build_feature_pyramid(const ImagePyramid* image_pyramid);
