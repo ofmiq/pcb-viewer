@@ -1,9 +1,6 @@
-#ifndef ORB_H
-#define ORB_H
+#ifndef LEVELS_RESULTS_H
+#define LEVELS_RESULTS_H
 
-#include <image.h>
-
-#include "corners.h"
 #include "feature_pyramid.h"
 #include "matching.h"
 
@@ -17,4 +14,4 @@ LevelResult* compute_levels_results(const Keypoint* keypoints, const Descriptor*
 
 void free_levels_results(LevelResult* leveles_result, int count);
 
-#endif  // ORB_H
+#endif  // LEVELS_RESULTS_H
