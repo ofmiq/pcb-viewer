@@ -6,6 +6,7 @@ add_library(pcbcore STATIC
     src/preprocessing.c
     src/corners.c
     src/matching.c
+    src/image_pyramid.c
 )
 
 target_include_directories(pcbcore PUBLIC
