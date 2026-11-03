@@ -40,6 +40,7 @@ target_compile_options(test_orb PRIVATE
     -fsanitize=address,leak,undefined
     -g
     -fno-omit-frame-pointer
+    -lm
 )
 
 target_link_options(test_orb PRIVATE
