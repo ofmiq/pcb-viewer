@@ -57,4 +57,4 @@ static const int BRIEF_PATTERN[] = {
     -13, 0,   -10, 5,   5,   8,   12,  11,  8,   9,   9,   -6,  7,   -4,  8,   -12, -10, 4,   -10,
     9,   7,   3,   12,  4,   9,   -7,  10,  -2,  7,   0,   12,  -2,  -1,  -6,  0,   -11};
 
-#endif  // BRIEF_PATERN_H
+#endif  // BRIEF_PATTERN_H

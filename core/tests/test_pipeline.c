@@ -5,7 +5,7 @@
 #include "preprocessing.h"
 
 int main(void) {
-  const char* input_path = "resources/png/standart.png";
+  const char* input_path = "resources/png/standard.png";
   const char* output_path = "resources/pipeline_out.png";
 
   printf("[CORE] Full pipeline test: %s\n\n", input_path);

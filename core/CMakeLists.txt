@@ -1,13 +1,13 @@
 add_library(pcbcore STATIC
-    src/image.c
-    src/stb_impl.c
-    src/image_utils.c
-    src/preprocessing.c
     src/corners.c
-    src/matching.c
-    src/image_pyramid.c
     src/feature_pyramid.c
+    src/image_pyramid.c
+    src/image_utils.c
+    src/image.c
     src/levels_results.c
+    src/matching.c
+    src/preprocessing.c
+    src/stb_impl.c
 )
 
 target_include_directories(pcbcore PUBLIC

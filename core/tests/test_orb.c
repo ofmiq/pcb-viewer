@@ -12,7 +12,7 @@
 #include "matching.h"
 #include "preprocessing.h"
 
-PcbImage* standart_preprocess_pipeline(const PcbImage* img) {
+PcbImage* standard_preprocess_pipeline(const PcbImage* img) {
   if (!img) {
     return NULL;
   }
@@ -63,35 +63,35 @@ static Keypoint* find_keypoints(const PcbImage* img, int* out_size) {
 int main() {
   int rc = 1;
 
-  PcbImage* raw_standart = NULL;
+  PcbImage* raw_standard = NULL;
   PcbImage* raw_cropped = NULL;
-  PcbImage* standart_img = NULL;
+  PcbImage* standard_img = NULL;
   PcbImage* crop_base = NULL;
 
-  Keypoint* standart_keypoints = NULL;
-  Descriptor* standart_descriptors = NULL;
+  Keypoint* standard_keypoints = NULL;
+  Descriptor* standard_descriptors = NULL;
 
   ImagePyramid* img_pyramid = NULL;
   FeaturePyramid* feature_pyramid = NULL;
   LevelResult* levels_results = NULL;
 
-  raw_standart = image_load("resources/png/standart.png");
+  raw_standard = image_load("resources/png/standard.png");
   raw_cropped = image_load("resources/png/crop.png");
 
-  if (!raw_standart || !raw_cropped) {
+  if (!raw_standard || !raw_cropped) {
     printf("Failed to load images\n");
     goto cleanup;
   }
 
-  const int standart_width = 1200;
-  const double s0 = (double)standart_width / raw_standart->width;
+  const int standard_width = 1200;
+  const double s0 = (double)standard_width / raw_standard->width;
 
   const double crop_nominal = raw_cropped->width * s0;
   const double extra = 1.0 / 0.706;
   const int crop_width = (int)(crop_nominal * extra + 0.5);
 
   printf("== INPUT PARAMETERS ==\n");
-  printf("Standard original: %dx%d\n", raw_standart->width, raw_standart->height);
+  printf("Standard original: %dx%d\n", raw_standard->width, raw_standard->height);
   printf("Crop original:     %dx%d\n", raw_cropped->width, raw_cropped->height);
   printf("Standard scale:    %.6f\n", s0);
   printf("Crop nominal:      %.2f px\n", crop_nominal);
@@ -101,29 +101,29 @@ int main() {
   struct timespec global_start_t, global_end_t;
   clock_gettime(CLOCK_MONOTONIC, &global_start_t);
 
-  double standart_pipeline_time =
-      TIME_EXEC(standart_img = standart_preprocess_pipeline(raw_standart));
+  double standard_pipeline_time =
+      TIME_EXEC(standard_img = standard_preprocess_pipeline(raw_standard));
 
-  if (!standart_img) {
+  if (!standard_img) {
     printf("Failed to preprocess standard image\n");
     goto cleanup;
   }
 
-  int standart_size = 0;
+  int standard_size = 0;
 
-  double standart_keypoints_time =
-      TIME_EXEC(standart_keypoints = find_keypoints(standart_img, &standart_size));
+  double standard_keypoints_time =
+      TIME_EXEC(standard_keypoints = find_keypoints(standard_img, &standard_size));
 
-  if (!standart_keypoints) {
+  if (!standard_keypoints) {
     printf("Failed to find standard keypoints\n");
     goto cleanup;
   }
 
-  double standart_descriptors_time =
-      TIME_EXEC(standart_descriptors =
-                    brief_compute_descriptors(standart_img, standart_keypoints, standart_size));
+  double standard_descriptors_time =
+      TIME_EXEC(standard_descriptors =
+                    brief_compute_descriptors(standard_img, standard_keypoints, standard_size));
 
-  if (!standart_descriptors) {
+  if (!standard_descriptors) {
     printf("Failed to compute standard descriptors\n");
     goto cleanup;
   }
@@ -154,8 +154,8 @@ int main() {
   }
 
   double compute_levels_results_time =
-      TIME_EXEC(levels_results = compute_levels_results(standart_keypoints, standart_descriptors,
-                                                        standart_size, feature_pyramid));
+      TIME_EXEC(levels_results = compute_levels_results(standard_keypoints, standard_descriptors,
+                                                        standard_size, feature_pyramid));
 
   if (!levels_results) {
     printf("Failed to compute level results\n");
@@ -183,12 +183,12 @@ int main() {
     for (int m = 0; m < matches_size; ++m) {
       const Match* match = &matches[m];
 
-      if (match->query_idx < 0 || match->query_idx >= standart_size || match->train_idx < 0 ||
+      if (match->query_idx < 0 || match->query_idx >= standard_size || match->train_idx < 0 ||
           match->train_idx >= feature_pyramid->levels[lvl].count) {
         continue;
       }
 
-      const Keypoint* q = &standart_keypoints[match->query_idx];
+      const Keypoint* q = &standard_keypoints[match->query_idx];
 
       const Keypoint* t = &cropped_keypoints[match->train_idx];
 
@@ -216,9 +216,9 @@ int main() {
   clock_gettime(CLOCK_MONOTONIC, &global_end_t);
 
   printf("\n========== STANDARD TIME ==========\n");
-  printf("Pipeline:    %.3f ms\n", standart_pipeline_time);
-  printf("Keypoints:   %.3f ms\n", standart_keypoints_time);
-  printf("Descriptors: %.3f ms\n", standart_descriptors_time);
+  printf("Pipeline:    %.3f ms\n", standard_pipeline_time);
+  printf("Keypoints:   %.3f ms\n", standard_keypoints_time);
+  printf("Descriptors: %.3f ms\n", standard_descriptors_time);
 
   printf("\n========== PYRAMID TIME ==========\n");
   printf("Pipeline: %.3f ms\n", build_pyramid_time);
@@ -237,13 +237,13 @@ cleanup:
   free_image_pyramid(img_pyramid);
 
   image_free(crop_base);
-  image_free(standart_img);
+  image_free(standard_img);
 
-  free(standart_keypoints);
-  free(standart_descriptors);
+  free(standard_keypoints);
+  free(standard_descriptors);
 
   image_free(raw_cropped);
-  image_free(raw_standart);
+  image_free(raw_standard);
 
   return rc;
 }

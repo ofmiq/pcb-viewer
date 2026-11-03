@@ -16,4 +16,4 @@ Match* brief_match_descriptors(const Keypoint* keys1, const Descriptor* desc1, i
                                const Keypoint* keys2, const Descriptor* desc2, int count2,
                                int* out_count);
 
-#endif
+#endif  // MATCHING_H

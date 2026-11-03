@@ -5,7 +5,7 @@
 #include "preprocessing.h"
 
 int main(void) {
-  const char* filenames[] = {"high_iso_noisy.png", "reflection.png", "standart.png"};
+  const char* filenames[] = {"high_iso_noisy.png", "reflection.png", "standard.png"};
   const int num_files = sizeof(filenames) / sizeof(filenames[0]);
 
   printf("[CORE] Starting image processing...\n\n");
