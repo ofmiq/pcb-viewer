@@ -5,6 +5,7 @@
 
 #include "corners.h"
 #include "debug.h"
+#include "feature_pyramid.h"
 #include "image.h"
 #include "image_pyramid.h"
 #include "matching.h"

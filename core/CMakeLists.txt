@@ -7,6 +7,7 @@ add_library(pcbcore STATIC
     src/corners.c
     src/matching.c
     src/image_pyramid.c
+    src/feature_pyramid.c
 )
 
 target_include_directories(pcbcore PUBLIC
