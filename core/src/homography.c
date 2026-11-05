@@ -138,3 +138,20 @@ int compute_dlt(const gsl_matrix* points1_norm, const gsl_matrix* points2_norm, 
 
   return 0;
 }
+
+int denormalize_homography(const gsl_matrix* H_norm, Normalization* normalization1,
+                           Normalization* normalization2, gsl_matrix* H_out) {
+  if (!H_norm || !normalization1 || !normalization2 || !H_out) {
+    return 1;
+  }
+
+  gsl_matrix* temp = gsl_matrix_alloc(3, 3);
+
+  gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, H_norm, normalization1->T, 0.0, temp);
+
+  gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, normalization2->T_inverse, temp, 0.0, H_out);
+
+  gsl_matrix_free(temp);
+
+  return 0;
+}
