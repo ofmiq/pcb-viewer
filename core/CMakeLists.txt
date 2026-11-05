@@ -8,6 +8,7 @@ add_library(pcbcore STATIC
     src/matching.c
     src/preprocessing.c
     src/stb_impl.c
+    src/homography.c
 )
 
 target_include_directories(pcbcore PUBLIC
