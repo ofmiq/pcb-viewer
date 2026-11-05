@@ -1,0 +1,14 @@
+prefix=/opt/homebrew/Cellar/gtk4/4.24.1
+includedir=${prefix}/include
+libdir=${prefix}/lib
+
+targets=macos
+gtk_binary_version=4.0.0
+gtk_host=aarch64-darwin
+
+Name: GTK
+Description: GTK Graphical UI Library
+Version: 4.24.1
+Requires: pango >=  1.58, pangocairo >=  1.58, gdk-pixbuf-2.0 >=  2.30.0, cairo >=  1.18.2, cairo-gobject >=  1.18.2, graphene-gobject-1.0 >=  1.10.0, gio-2.0 >=  2.89.3
+Libs: -L${libdir} -lgtk-4
+Cflags: -I${includedir}/gtk-4.0

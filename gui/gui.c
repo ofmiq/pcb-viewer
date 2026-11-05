@@ -54,3 +54,7 @@ int show_image (int argc, char **argv) {
   
   return status;
 }
+
+int main(int argc, char **argv) {
+    return show_image(argc, argv);
+}
