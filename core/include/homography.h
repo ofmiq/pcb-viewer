@@ -10,7 +10,9 @@ typedef struct {
   gsl_matrix* T_inverse;
 } Normalization;
 
-void normalize_points(const Keypoint* points, int count, gsl_matrix* normalized_pts_out,
-                      Normalization* normalization_out);
+int normalize_points(const Keypoint* points, int count, gsl_matrix* normalized_pts_out,
+                     Normalization* normalization_out);
+
+int compute_dlt(const gsl_matrix* points1_norm, const gsl_matrix* points2_norm, gsl_matrix* H_out);
 
 #endif  // HOMOGRAPHY_H

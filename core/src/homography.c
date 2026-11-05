@@ -3,6 +3,7 @@
 #include <gsl/gsl_linalg.h>
 #include <gsl/gsl_matrix_double.h>
 #include <gsl/gsl_permutation.h>
+#include <gsl/gsl_vector_double.h>
 #include <math.h>
 
 static void invert_matrix(const gsl_matrix* m, gsl_matrix* m_invert_out) {
@@ -11,7 +12,7 @@ static void invert_matrix(const gsl_matrix* m, gsl_matrix* m_invert_out) {
   }
 
   int s;
-  size_t n = m->size1;
+  int n = m->size1;
 
   gsl_permutation* p = gsl_permutation_alloc(n);
   gsl_matrix* m_copy = gsl_matrix_alloc(n, n);
@@ -24,10 +25,10 @@ static void invert_matrix(const gsl_matrix* m, gsl_matrix* m_invert_out) {
   gsl_matrix_free(m_copy);
 }
 
-void normalize_points(const Keypoint* points, int count, gsl_matrix* normalized_pts_out,
-                      Normalization* normalization_out) {
+int normalize_points(const Keypoint* points, int count, gsl_matrix* normalized_pts_out,
+                     Normalization* normalization_out) {
   if (!points || count <= 0 || !normalized_pts_out || !normalization_out) {
-    return;
+    return 1;
   }
 
   double x_sum = 0.0;
@@ -68,4 +69,72 @@ void normalize_points(const Keypoint* points, int count, gsl_matrix* normalized_
     gsl_matrix_set(normalized_pts_out, i, 0, x_norm);
     gsl_matrix_set(normalized_pts_out, i, 1, y_norm);
   }
+
+  return 0;
+}
+
+int compute_dlt(const gsl_matrix* points1_norm, const gsl_matrix* points2_norm, gsl_matrix* H_out) {
+  if (!points1_norm || !points2_norm || !H_out) {
+    return 1;
+  }
+
+  const int A_rows = 8;
+  const int A_cols = 9;
+
+  gsl_matrix* A = gsl_matrix_alloc(A_rows, A_cols);
+  gsl_matrix_set_zero(A);
+
+  for (int i = 0; i < 4; ++i) {
+    double x1 = gsl_matrix_get(points1_norm, i, 0);
+    double y1 = gsl_matrix_get(points1_norm, i, 1);
+    double x2 = gsl_matrix_get(points2_norm, i, 0);
+    double y2 = gsl_matrix_get(points2_norm, i, 1);
+
+    int r1 = 2 * i;
+    int r2 = 2 * i + 1;
+
+    gsl_matrix_set(A, r1, 0, -x1);
+    gsl_matrix_set(A, r1, 1, -y1);
+    gsl_matrix_set(A, r1, 2, -1.0);
+    gsl_matrix_set(A, r1, 3, 0.0);
+    gsl_matrix_set(A, r1, 4, 0.0);
+    gsl_matrix_set(A, r1, 5, 0.0);
+    gsl_matrix_set(A, r1, 6, x1 * x2);
+    gsl_matrix_set(A, r1, 7, y1 * x2);
+    gsl_matrix_set(A, r1, 8, x2);
+
+    gsl_matrix_set(A, r2, 0, 0.0);
+    gsl_matrix_set(A, r2, 1, 0.0);
+    gsl_matrix_set(A, r2, 2, 0.0);
+    gsl_matrix_set(A, r2, 3, -x1);
+    gsl_matrix_set(A, r2, 4, -y1);
+    gsl_matrix_set(A, r2, 5, -1.0);
+    gsl_matrix_set(A, r2, 6, x1 * y2);
+    gsl_matrix_set(A, r2, 7, y1 * y2);
+    gsl_matrix_set(A, r2, 8, y2);
+  }
+
+  gsl_matrix* V = gsl_matrix_alloc(A_cols, A_cols);
+  gsl_vector* S = gsl_vector_alloc(A_cols);
+  gsl_vector* work = gsl_vector_alloc(A_cols);
+
+  gsl_linalg_SV_decomp(A, V, S, work);
+
+  gsl_vector* h = gsl_vector_alloc(A_cols);
+
+  gsl_matrix_get_col(h, V, A_cols - 1);
+
+  for (int i = 0; i < 3; ++i) {
+    for (int j = 0; j < 3; ++j) {
+      gsl_matrix_set(H_out, i, j, gsl_vector_get(h, i * 3 + j));
+    }
+  }
+
+  gsl_matrix_free(A);
+  gsl_matrix_free(V);
+  gsl_vector_free(S);
+  gsl_vector_free(work);
+  gsl_vector_free(h);
+
+  return 0;
 }
