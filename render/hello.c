@@ -35,6 +35,11 @@ void draw_lines(cairo_t* cr){
 }
 
 int main(){
+
+    double zoom = 1.5;
+    double cam_x = 40;
+    double cam_y = 60;
+
     cairo_surface_t *surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, 200, 200); // create surface where we draw
     cairo_t* cr = cairo_create(surface); // create pen for drawing
 
@@ -42,8 +47,8 @@ int main(){
     cairo_rectangle(cr, 0, 0, 200, 200); //creating rectangle (pen, x, y, width, height)
     cairo_fill(cr);
 
-    cairo_translate(cr, 40, 40);
-    cairo_scale(cr, 1.5 , 1.5);
+    cairo_translate(cr, -cam_x, -cam_y);
+    cairo_scale(cr, zoom , zoom);
 
     draw_rectangles(cr);
     draw_lines(cr);
