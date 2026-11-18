@@ -1,56 +1,67 @@
+#include <math.h>
+#include <stdio.h>
+
 #include "cairo.h"
+#include "camera.h"
 
-void draw_rectangles(cairo_t* cr) {
-  cairo_set_source_rgb(cr, 1, 0, 0);
-  cairo_rectangle(cr, 0, 0, 60, 60);
-  cairo_fill(cr);
+static int failures = 0;
 
-  cairo_set_source_rgb(cr, 0, 1, 0);
-  cairo_rectangle(cr, 60, 0, 60, 60);
-  cairo_fill(cr);
-
-  cairo_set_source_rgb(cr, 0, 0, 1);
-  cairo_rectangle(cr, 0, 60, 60, 60);
-  cairo_fill(cr);
-
-  cairo_set_source_rgb(cr, 0.5, 0.5, 0.5);
-  cairo_rectangle(cr, 60, 60, 60, 60);
-  cairo_fill(cr);
+static void check(const char* name, double got, double expected){
+  int ok = fabs(got - expected) < 1e-9;
+  if(!ok) failures++;
+  printf("%s %s: got %f, expected %f\n", ok ? "OK " : "FAIL ", name, got, expected);
 }
 
-void draw_lines(cairo_t* cr) {
-  cairo_set_source_rgb(cr, 1, 1, 1);
+static void test_camera(void) {
+  Camera c;
+  double mx, my;
 
-  cairo_move_to(cr, 0, 0);
-  cairo_line_to(cr, 120, 120);
+  c.x = 100; c.y = 50; c.zoom = 2;
+  camera_screen_to_coordinates(&c, 10, 20, &mx, &my);
+  check("screen_to_coords x", mx, 105);
+  check("screen_to_coords y", my, 60);
 
-  cairo_move_to(cr, 60, 0);
-  cairo_line_to(cr, 120, 60);
+  camera_init(&c);
+  c.zoom = 0.5;
+  camera_screen_to_coordinates(&c, 10, 10, &mx, &my);
+  check("zoom 0.5 x", mx, 20);
+  check("zoom 0.5 y", my, 20);
 
-  cairo_move_to(cr, 0, 60);
-  cairo_line_to(cr, 60, 120);
+  c.x = 100; c.y = 50; c.zoom = 2;
+  camera_pan(&c, 10, 0);
+  check("pan x", c.x, 95);
+  check("pan y", c.y, 50);
+  camera_pan(&c, -10, 0);
+  check("pan back x", c.x, 100);
 
-  cairo_stroke(cr);
+  camera_init(&c);
+  camera_zoom_at(&c, 100, 100, 2);
+  check("zoom_at zoom", c.zoom, 2);
+  check("zoom_at x", c.x, 50);
+  check("zoom_at y", c.y, 50);
+
+  double bx, by, ax, ay;
+  c.x = 13; c.y = -7; c.zoom = 1.7;
+  camera_screen_to_coordinates(&c, 250, 80, &bx, &by);
+  camera_zoom_at(&c, 250, 80, 3.1);
+  camera_screen_to_coordinates(&c, 250, 80, &ax, &ay);
+  check("invariant x", ax, bx);
+  check("invariant y", ay, by);
+
+  camera_init(&c);
+  camera_zoom_at(&c, 10, 10, 1000);
+  check("max zoom", c.zoom, 32);
+  camera_zoom_at(&c, 10, 10, 1e-6);
+  check("min zoom", c.zoom, 0.05);
 }
 
 int main() {
-  cairo_surface_t* surface =
-      cairo_image_surface_create(CAIRO_FORMAT_ARGB32, 200, 200);  // create surface where we draw
-  cairo_t* cr = cairo_create(surface);                            // create pen for drawing
+  test_camera();
 
-  cairo_set_source_rgb(cr, 0, 0,
-                       0);  // set color of pen (pen, red, green, blue) rgb seting from 0.0 to 1.0
-  cairo_rectangle(cr, 0, 0, 200, 200);  // creating rectangle (pen, x, y, width, height)
-  cairo_fill(cr);
-
-  cairo_translate(cr, 40, 40);
-  cairo_scale(cr, 1.5, 1.5);
-
-  draw_rectangles(cr);
-  draw_lines(cr);
-
-  cairo_surface_write_to_png(surface, "picture.png");  // save picture to file
-  cairo_destroy(cr);                                   // deleting pointer to pen
-  cairo_surface_destroy(surface);                      // deleting pointer to surface
+  if(failures == 0){
+    printf("all test pased \n");
+  }else{
+    printf("%d test failed\n", failures);
+  }
   return 0;
 }
