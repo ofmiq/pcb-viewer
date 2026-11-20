@@ -24,8 +24,28 @@ Match* brief_match_descriptors(const Keypoint* keys1, const Descriptor* desc1, i
     return NULL;
   }
 
+  int* best_query_for_train = (int*)malloc(sizeof(int) * count2);
+  if (!best_query_for_train) {
+    *out_count = 0;
+    return NULL;
+  }
+
+  for (int j = 0; j < count2; ++j) {
+    int min_dist = INT_MAX;
+    int best_i = -1;
+    for (int i = 0; i < count1; ++i) {
+      int dist = brief_hamming_distance(desc1[i].bytes, desc2[j].bytes);
+      if (dist < min_dist) {
+        min_dist = dist;
+        best_i = i;
+      }
+    }
+    best_query_for_train[j] = best_i;
+  }
+
   Match* matches = (Match*)malloc(sizeof(Match) * count1);
   if (!matches) {
+    free(best_query_for_train);
     *out_count = 0;
     return NULL;
   }
@@ -52,14 +72,17 @@ Match* brief_match_descriptors(const Keypoint* keys1, const Descriptor* desc1, i
 
     if (best_dist <= threshold && best_idx != -1) {
       if ((long long)best_dist * 4 < (long long)second_best_dist * 3) {
-        matches[match_count].query_idx = i;
-        matches[match_count].train_idx = best_idx;
-        matches[match_count].distance = best_dist;
-        ++match_count;
+        if (best_query_for_train[best_idx] == i) {
+          matches[match_count].query_idx = i;
+          matches[match_count].train_idx = best_idx;
+          matches[match_count].distance = best_dist;
+          ++match_count;
+        }
       }
     }
   }
 
+  free(best_query_for_train);
   *out_count = match_count;
   return matches;
 }
