@@ -1,5 +1,6 @@
 #include "corners.h"
 
+#include <math.h>
 #include <stdbool.h>
 #include <stdlib.h>
 
@@ -59,6 +60,35 @@ static int keypoints_comparator(const void* a, const void* b) {
     return -1;
   }
   return 0;
+}
+
+static double compute_keypoint_orientation(const PcbImage* img, Keypoint* kp) {
+  int radius = BRIEF_HALF_PATCH;
+  int cx = (int)round(kp->x);
+  int cy = (int)round(kp->y);
+
+  double m01 = 0.0;
+  double m10 = 0.0;
+
+  if (cx - radius < 0 || cx + radius >= img->width || cy - radius < 0 ||
+      cy + radius >= img->height) {
+    return 0.0;
+  }
+
+  for (int dy = -radius; dy <= radius; ++dy) {
+    for (int dx = -radius; dx <= radius; ++dx) {
+      if (dx * dx + dy * dy <= radius * radius) {
+        int px = cx + dx;
+        int py = cy + dy;
+        uint8_t intensity = img->data[py * img->width + px];
+
+        m10 += (double)dx * (double)intensity;
+        m01 += (double)dy * (double)intensity;
+      }
+    }
+  }
+
+  return atan2(m01, m10);
 }
 
 Keypoint* fast_detect(const PcbImage* img, int threshold, int* count_out) {
@@ -233,7 +263,6 @@ Descriptor* brief_compute_descriptors(const PcbImage* img, Keypoint* keypoints, 
     return NULL;
   }
 
-  int half_patch = BRIEF_HALF_PATCH;
   int height = img->height;
   int width = img->width;
 
@@ -243,31 +272,46 @@ Descriptor* brief_compute_descriptors(const PcbImage* img, Keypoint* keypoints, 
   }
 
   for (int i = 0; i < count; ++i) {
-    int cx = keypoints[i].x;
-    int cy = keypoints[i].y;
+    Keypoint* kp = &keypoints[i];
 
-    if (cx - half_patch < 0 || cx + half_patch >= width || cy - half_patch < 0 ||
-        cy + half_patch >= height) {
-      continue;
-    }
+    double theta = compute_keypoint_orientation(img, kp);
+    kp->angle = theta;
+
+    double cos_t = cos(theta);
+    double sin_t = sin(theta);
+
+    int cx_round = round(kp->x);
+    int cy_round = round(kp->y);
 
     for (int p = 0; p < BRIEF_DESCRIPTOR_BYTES * 8; ++p) {
-      int x1 = cx + BRIEF_PATTERN[p * 4 + 0];
-      int y1 = cy + BRIEF_PATTERN[p * 4 + 1];
-      int x2 = cx + BRIEF_PATTERN[p * 4 + 2];
-      int y2 = cy + BRIEF_PATTERN[p * 4 + 3];
+      double orig_x1 = BRIEF_PATTERN[p * 4 + 0];
+      double orig_y1 = BRIEF_PATTERN[p * 4 + 1];
+      double orig_x2 = BRIEF_PATTERN[p * 4 + 2];
+      double orig_y2 = BRIEF_PATTERN[p * 4 + 3];
 
-      uint8_t p1_val = img->data[y1 * width + x1];
-      uint8_t p2_val = img->data[y2 * width + x2];
+      int x1 = round(orig_x1 * cos_t - orig_y1 * sin_t);
+      int y1 = round(orig_x1 * sin_t + orig_y1 * cos_t);
+      int x2 = round(orig_x2 * cos_t - orig_y2 * sin_t);
+      int y2 = round(orig_x2 * sin_t + orig_y2 * cos_t);
 
-      if (p1_val < p2_val) {
-        int byte_idx = p / 8;
-        int bit_idx = p % 8;
-        descriptors[i].bytes[byte_idx] |= (1 << bit_idx);
+      int px1 = cx_round + x1;
+      int py1 = cy_round + y1;
+      int px2 = cx_round + x2;
+      int py2 = cy_round + y2;
+
+      if (px1 >= 0 && px1 < width && py1 >= 0 && py1 < height && px2 >= 0 && px2 < width &&
+          py2 >= 0 && py2 < height) {
+        uint8_t p1_val = img->data[py1 * width + px1];
+        uint8_t p2_val = img->data[py2 * width + px2];
+
+        if (p1_val < p2_val) {
+          int byte_idx = p / 8;
+          int bit_idx = p % 8;
+          descriptors[i].bytes[byte_idx] |= (1 << bit_idx);
+        }
       }
     }
   }
 
   return descriptors;
 }
-
